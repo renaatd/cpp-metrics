@@ -1,10 +1,15 @@
 # GoogleTest requires at least C++11
 set(CMAKE_CXX_STANDARD 11)
 
+# On recent versions of CMake: use DOWNLOAD_EXTRACT_TIMESTAMP YES
+if(POLICY CMP0135)
+  cmake_policy(SET CMP0135 NEW)
+endif()
+
 include(FetchContent)
 FetchContent_Declare(
     googletest
-    URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
+    URL https://github.com/google/googletest/archive/d1467f5813f4d363cfd11aba99c4e9fe47a85e99.zip
 )
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
