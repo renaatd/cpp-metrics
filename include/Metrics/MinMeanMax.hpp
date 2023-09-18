@@ -4,6 +4,7 @@
 #include "IMetric.hpp"
 #include <cmath>
 #include <iomanip>
+#include <mutex>
 #include <sstream>
 #include <string>
 
@@ -11,46 +12,68 @@ namespace Metrics {
 template <typename T = double> class MinMeanMax : public IMetric {
   public:
     void reset() override {
+        std::lock_guard<std::mutex> lock(_mutex);
         _count = {};
         _sum = {};
     }
 
     void update(T value) {
+        std::lock_guard<std::mutex> lock(_mutex);
         if (_count == 0) {
             _min = value;
             _max = value;
         } else {
-            if (value < _min)
-                _min = value;
-            if (value > _max)
-                _max = value;
+            _min = std::min(value, _min);
+            _max = std::max(value, _max);
         }
 
         _count++;
         _sum += value;
     }
 
-    int count() const { return _count; }
+    int count() const {
+        std::lock_guard<std::mutex> lock(_mutex);
+        return count_nolock();
+    }
 
-    T min() const { return (_count == 0) ? NAN : _min; }
-    T mean() const { return (_count == 0) ? NAN : _sum / _count; }
-    T max() const { return (_count == 0) ? NAN : _max; }
+    T min() const {
+        std::lock_guard<std::mutex> lock(_mutex);
+        return min_nolock();
+    }
+
+    T mean() const {
+        std::lock_guard<std::mutex> lock(_mutex);
+        return mean_nolock();
+    }
+
+    T max() const {
+        std::lock_guard<std::mutex> lock(_mutex);
+        return max_nolock();
+    }
 
     std::string toString(int precision = -1) const override {
+        std::lock_guard<std::mutex> lock(_mutex);
         std::ostringstream os;
         if (precision > -1) {
             os << std::fixed << std::setprecision(precision);
         }
-        os << "count(" << count() << ") min(" << min() << ") mean(" << mean()
-           << ") max(" << max() << ")";
+        os << "count(" << count_nolock() << ") min(" << min_nolock()
+           << ") mean(" << mean_nolock() << ") max(" << max_nolock() << ")";
         return os.str();
     }
 
   private:
+    int count_nolock() const { return _count; }
+
+    T min_nolock() const { return (_count == 0) ? NAN : _min; }
+    T mean_nolock() const { return (_count == 0) ? NAN : _sum / _count; }
+    T max_nolock() const { return (_count == 0) ? NAN : _max; }
+
+    mutable std::mutex _mutex{};
     int _count = 0;
-    T _sum = 0;
-    T _min = 0;
-    T _max = 0;
+    T _min{};
+    T _max{};
+    T _sum{};
 };
 
 } // namespace Metrics

@@ -26,6 +26,38 @@ TEST(TestStatistics, threeValues) {
     EXPECT_EQ(3, dut.count());
 }
 
+TEST(TestStatistics, variance) {
+    Metrics::Statistics<> dut;
+
+    EXPECT_TRUE(std::isnan(dut.variance()));
+    EXPECT_TRUE(std::isnan(dut.stddev()));
+    EXPECT_TRUE(std::isnan(dut.sample_variance()));
+    EXPECT_TRUE(std::isnan(dut.sample_stddev()));
+
+    dut.update(10);
+    EXPECT_DOUBLE_EQ(0.0, dut.variance());
+    EXPECT_DOUBLE_EQ(0.0, dut.stddev());
+    EXPECT_TRUE(std::isnan(dut.sample_variance()));
+    EXPECT_TRUE(std::isnan(dut.sample_stddev()));
+
+    dut.update(12);
+    EXPECT_DOUBLE_EQ(1.0, dut.variance());
+    EXPECT_DOUBLE_EQ(1.0, dut.stddev());
+    EXPECT_DOUBLE_EQ(2.0, dut.sample_variance());
+    EXPECT_DOUBLE_EQ(sqrt(2.0), dut.sample_stddev());
+
+    dut.update(12);
+    dut.update(14);
+    EXPECT_EQ(10, dut.min());
+    EXPECT_EQ(12, dut.mean());
+    EXPECT_EQ(14, dut.max());
+    EXPECT_EQ(4, dut.count());
+    EXPECT_DOUBLE_EQ(2.0, dut.variance());
+    EXPECT_DOUBLE_EQ(sqrt(2.0), dut.stddev());
+    EXPECT_DOUBLE_EQ(2.0 * 4.0 / 3.0, dut.sample_variance());
+    EXPECT_DOUBLE_EQ(sqrt(2.0 * 4.0 / 3.0), dut.sample_stddev());
+}
+
 TEST(TestStatistics, reset) {
     Metrics::Statistics<> dut;
 
