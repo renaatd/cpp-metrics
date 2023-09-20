@@ -7,23 +7,25 @@
 
 namespace Metrics {
 /** sliding windows on a stream of data */
-template <typename T = double> class SlidingWindowReservoir : public IReservoir<T> {
+template <typename T = double, typename M = std::mutex>
+class SlidingWindowReservoir : public IReservoir<T> {
   public:
     explicit SlidingWindowReservoir(unsigned n) : _reservoir(n) {}
 
     void reset() override {
+        const std::lock_guard<M> lock(_mutex);
         _writePosition = 0;
         _full = false;
     }
 
     /** Update sliding window */
     void update(T value) override {
-        std::lock_guard<std::mutex> lock(_mutex);
+        const std::lock_guard<M> lock(_mutex);
         _reservoir[_writePosition] = value;
         _writePosition++;
 
-        auto size = static_cast<unsigned>(_reservoir.size());
-        if (_writePosition >= size) {
+        auto reservoir_size = static_cast<unsigned>(_reservoir.size());
+        if (_writePosition >= reservoir_size) {
             _full = true;
             _writePosition = 0;
         }
@@ -31,21 +33,26 @@ template <typename T = double> class SlidingWindowReservoir : public IReservoir<
 
     unsigned size() const override { return _reservoir.size(); }
     unsigned samples() const override {
-        return _full ? _reservoir.size() : _writePosition;
+        const std::lock_guard<M> lock(_mutex);
+        return samples_nolock();
     }
     const T *data() const override { return _reservoir.data(); }
 
     Snapshot<T> getSnapshot() const override {
-        std::lock_guard<std::mutex> lock(_mutex);
+        const std::lock_guard<M> lock(_mutex);
         return Snapshot<T>(_reservoir.cbegin(),
-                           _reservoir.cbegin() + samples());
+                           _reservoir.cbegin() + samples_nolock());
     }
 
   private:
-    mutable std::mutex _mutex{};
+    unsigned samples_nolock() const {
+        return _full ? _reservoir.size() : _writePosition;
+    }
+
     unsigned _writePosition = 0;
     bool _full = false;
     std::vector<T> _reservoir;
+    mutable M _mutex{};
 };
 
 } // namespace Metrics

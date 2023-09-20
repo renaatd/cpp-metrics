@@ -11,17 +11,18 @@
 
 namespace Metrics {
 /** Calculate statistics incrementally using Welford's algorithm */
-template <typename T = double> class Statistics : public IMetric {
+template <typename T = double, typename M = std::mutex>
+class Statistics : public IMetric {
   public:
     void reset() override {
-        std::lock_guard<std::mutex> lock(_mutex);
+        const std::lock_guard<M> lock(_mutex);
         _count = 0;
         _mean = {};
         _m2 = {};
     }
 
     void update(T value) {
-        std::lock_guard<std::mutex> lock(_mutex);
+        const std::lock_guard<M> lock(_mutex);
 
         if (_count == 0) {
             _min = value;
@@ -43,51 +44,51 @@ template <typename T = double> class Statistics : public IMetric {
     }
 
     int count() const {
-        std::lock_guard<std::mutex> lock(_mutex);
+        const std::lock_guard<M> lock(_mutex);
         return count_nolock();
     }
 
     T min() const {
-        std::lock_guard<std::mutex> lock(_mutex);
+        const std::lock_guard<M> lock(_mutex);
         return min_nolock();
     }
 
     T mean() const {
-        std::lock_guard<std::mutex> lock(_mutex);
+        const std::lock_guard<M> lock(_mutex);
         return mean_nolock();
     }
 
     T max() const {
-        std::lock_guard<std::mutex> lock(_mutex);
+        const std::lock_guard<M> lock(_mutex);
         return max_nolock();
     }
 
     /** variance of a population */
     T variance() const {
-        std::lock_guard<std::mutex> lock(_mutex);
+        const std::lock_guard<M> lock(_mutex);
         return variance_nolock();
     }
 
     /** standard deviation of a population */
     T stddev() const {
-        std::lock_guard<std::mutex> lock(_mutex);
+        const std::lock_guard<M> lock(_mutex);
         return stddev_nolock();
     }
 
     /** variance of a sample from a population */
     T sample_variance() const {
-        std::lock_guard<std::mutex> lock(_mutex);
+        const std::lock_guard<M> lock(_mutex);
         return sample_variance_nolock();
     }
 
     /** standard deviation of a sample of a population */
     T sample_stddev() const {
-        std::lock_guard<std::mutex> lock(_mutex);
+        const std::lock_guard<M> lock(_mutex);
         return sample_stddev_nolock();
     }
 
     std::string toString(int precision = -1) const override {
-        std::lock_guard<std::mutex> lock(_mutex);
+        const std::lock_guard<M> lock(_mutex);
         std::ostringstream os;
         if (precision > -1) {
             os << std::fixed << std::setprecision(precision);
@@ -112,12 +113,12 @@ template <typename T = double> class Statistics : public IMetric {
     }
     T sample_stddev_nolock() const { return sqrt(sample_variance_nolock()); }
 
-    mutable std::mutex _mutex{};
     int _count = 0;
     T _min{};
     T _max{};
     T _mean{};
     T _m2{};
+    mutable M _mutex{};
 };
 
 } // namespace Metrics

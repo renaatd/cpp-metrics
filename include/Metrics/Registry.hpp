@@ -9,8 +9,9 @@
 namespace Metrics {
 class Registry {
   public:
+    /** add a metric to the registry while sharing ownership */
     void addMetric(const std::string &name, std::shared_ptr<IMetric> metric) {
-        _registry[name] = metric;
+        _registry[name] = std::move(metric);
     }
 
     std::map<std::string, std::string> reportMap(int precision = -1) {

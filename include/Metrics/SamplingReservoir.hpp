@@ -12,25 +12,22 @@
 
 namespace Metrics {
 /** create sample reservoir on a stream of data */
-template <typename T = double> class SamplingReservoir : public IReservoir<T> {
+template <typename T = double, typename M = std::mutex>
+class SamplingReservoir : public IReservoir<T> {
   public:
-    explicit SamplingReservoir(unsigned n) : _distribution_index(0, n-1), _reservoir(n) {
-        reset();
+    explicit SamplingReservoir(unsigned n)
+        : _distribution_index(0, n - 1), _reservoir(n) {
+        reinitialize();
     }
 
     void reset() override {
-        std::lock_guard<std::mutex> lock(_mutex);
-        _count = 0;
-
-        auto n = static_cast<int>(_reservoir.size());
-        _next = n-1;
-        _w = std::exp(std::log(getRandom()) / n);
-        skip();
+        const std::lock_guard<M> lock(_mutex);
+        reinitialize();
     }
 
     /** Update reservoir using fast algorithm L */
     void update(T value) override {
-        std::lock_guard<std::mutex> lock(_mutex);
+        const std::lock_guard<M> lock(_mutex);
         auto n = static_cast<unsigned>(_reservoir.size());
         if (_count < n) {
             _reservoir[_count] = value;
@@ -45,14 +42,15 @@ template <typename T = double> class SamplingReservoir : public IReservoir<T> {
     unsigned count() const { return _count; }
     unsigned size() const override { return _reservoir.size(); }
     unsigned samples() const override {
-        return (count() < size()) ? count() : size();
+        const std::lock_guard<M> lock(_mutex);
+        return samples_nolock();
     }
     const T *data() const override { return _reservoir.data(); }
 
     Snapshot<T> getSnapshot() const override {
-        std::lock_guard<std::mutex> lock(_mutex);
+        const std::lock_guard<M> lock(_mutex);
         return Snapshot<T>(_reservoir.cbegin(),
-                           _reservoir.cbegin() + samples());
+                           _reservoir.cbegin() + samples_nolock());
     }
 
   private:
@@ -70,15 +68,29 @@ template <typename T = double> class SamplingReservoir : public IReservoir<T> {
         _w *= std::exp(std::log(getRandom()) / _reservoir.size());
     }
 
-    unsigned _count {};
-    unsigned _next {};
-    double _w {};
+    /** non-virtual function to initialize, can be caled from constructor */
+    void reinitialize() {
+        _count = 0;
+
+        auto n = static_cast<int>(_reservoir.size());
+        _next = n - 1;
+        _w = std::exp(std::log(getRandom()) / n);
+        skip();
+    }
+
+    unsigned samples_nolock() const {
+        return (count() < size()) ? count() : size();
+    }
+
+    unsigned _count{};
+    unsigned _next{};
+    double _w{};
     /// Fast random generator, seeded
-    std::minstd_rand _random { std::random_device{}() };
-    std::uniform_real_distribution<> _distribution_real { 0.0, 1.0 };
+    std::minstd_rand _random{std::random_device{}()};
+    std::uniform_real_distribution<> _distribution_real{0.0, 1.0};
     std::uniform_int_distribution<> _distribution_index;
     std::vector<T> _reservoir;
-    mutable std::mutex _mutex{};
+    mutable M _mutex{};
 };
 
 } // namespace Metrics

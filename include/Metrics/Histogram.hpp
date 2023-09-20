@@ -51,7 +51,8 @@ template <typename T, typename U = double> class Histogram : public IMetric {
         return os.str();
     }
 
-    void dumpBinsToStream(const Snapshot<U> &snapshot, std::ostream &os, int precision = -1) const {
+    void dumpBinsToStream(const Snapshot<U> &snapshot, std::ostream &os,
+                          int precision = -1) const {
         // get limits of bins
         auto min = snapshot.getValue(0.0);
         auto max = snapshot.getValue(1.0);
@@ -70,14 +71,17 @@ template <typename T, typename U = double> class Histogram : public IMetric {
             if (precision > -1) {
                 os << std::fixed << std::setprecision(precision);
             }
-            os << std::setw(6) << min + i * width / _noBins << " <= x: " << std::setw(4) << count << " ("
-               << std::setw(5) << std::setprecision(1) << std::fixed << percent << " %) - "
-               << std::string(MAX_BIN_WIDTH * count / maxCount, '*') << std::endl;
+            os << std::setw(6) << min + i * width / _noBins
+               << " <= x: " << std::setw(4) << count << " (" << std::setw(5)
+               << std::setprecision(1) << std::fixed << percent << " %) - "
+               << std::string(MAX_BIN_WIDTH * count / maxCount, '*')
+               << std::endl;
         }
     }
 
   private:
-    static constexpr double MAX_BIN_WIDTH = 50; /** width of the largest bin in the output */
+    static constexpr double MAX_BIN_WIDTH =
+        50; /** width of the largest bin in the output */
     T _reservoir;
     bool _withStats;
     int _noBins;
