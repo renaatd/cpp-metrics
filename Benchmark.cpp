@@ -1,10 +1,11 @@
 #include "Metrics/Gauge.hpp"
 #include "Metrics/Histogram.hpp"
+#include "Metrics/Kurtosis.hpp"
 #include "Metrics/MinMeanMax.hpp"
 #include "Metrics/Registry.hpp"
 #include "Metrics/SamplingReservoir.hpp"
 #include "Metrics/SlidingWindowReservoir.hpp"
-#include "Metrics/Statistics.hpp"
+#include "Metrics/Variance.hpp"
 #include "elapsed.hpp"
 #include <iostream>
 
@@ -35,7 +36,7 @@ int main() {
 
     {
         std::cout << "Statistics<>()" << std::endl;
-        Metrics::Statistics<> stats;
+        Metrics::Variance<> stats;
         Elapsed s;
         for (int i = 0; i < LOOPS_UPDATE; i++) {
             stats.update(i);
@@ -48,7 +49,20 @@ int main() {
 
     {
         std::cout << "Statistics<double,DummyMutex>()" << std::endl;
-        Metrics::Statistics<double, DummyMutex> stats;
+        Metrics::Variance<double, DummyMutex> stats;
+        Elapsed s;
+        for (int i = 0; i < LOOPS_UPDATE; i++) {
+            stats.update(i);
+        }
+        double ns_per_loop =
+            static_cast<double>(s.ElapsedUs()) * 1000.0 / LOOPS_UPDATE;
+        std::cout << "Stats: " << stats.toString(1) << std::endl;
+        printf("time per loop: %.1lf ns\n\n", ns_per_loop);
+    }
+
+    {
+        std::cout << "Kurtosis<double,DummyMutex>()" << std::endl;
+        Metrics::Kurtosis<double, DummyMutex> stats;
         Elapsed s;
         for (int i = 0; i < LOOPS_UPDATE; i++) {
             stats.update(i);
@@ -186,7 +200,7 @@ int main() {
         std::cout << "Histogram<SamplingReservoir<double> >(1000)" << std::endl;
         Metrics::Histogram<Metrics::SamplingReservoir<double>, double>
             histogram{1000, true, 31};
-        Metrics::Statistics<double> stats{};
+        Metrics::Variance<double> stats{};
         std::mt19937 random_generator;
         std::normal_distribution<> distribution{100, 10};
         for (int i = 0; i < 100; i++) {
@@ -209,7 +223,7 @@ int main() {
     {
         Metrics::Registry registry;
         auto gauge = std::make_shared<Metrics::Gauge<double>>();
-        auto stats = std::make_shared<Metrics::Statistics<double>>();
+        auto stats = std::make_shared<Metrics::Variance<double>>();
 
         registry.addMetric("my gauge", gauge);
         registry.addMetric("my stats", stats);

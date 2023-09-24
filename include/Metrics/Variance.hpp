@@ -10,9 +10,9 @@
 #include <string>
 
 namespace Metrics {
-/** Calculate statistics incrementally using Welford's algorithm */
+/** Calculate 2nd order statistics incrementally using Welford's algorithm */
 template <typename T = double, typename M = std::mutex>
-class Statistics : public IMetric {
+class Variance : public IMetric {
   public:
     void reset() override {
         const std::lock_guard<M> lock(_mutex);

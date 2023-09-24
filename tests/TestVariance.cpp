@@ -1,11 +1,11 @@
-#include "Metrics/Statistics.hpp"
+#include "Metrics/Variance.hpp"
 #include "gtest/gtest.h"
 #include <cmath>
 
 namespace {
 
 TEST(TestStatistics, singleValue) {
-    Metrics::Statistics<> dut;
+    Metrics::Variance<> dut;
 
     EXPECT_TRUE(std::isnan(dut.mean()));
     dut.update(-1);
@@ -15,7 +15,7 @@ TEST(TestStatistics, singleValue) {
 }
 
 TEST(TestStatistics, threeValues) {
-    Metrics::Statistics<> dut;
+    Metrics::Variance<> dut;
 
     dut.update(1);
     dut.update(2);
@@ -27,7 +27,7 @@ TEST(TestStatistics, threeValues) {
 }
 
 TEST(TestStatistics, variance) {
-    Metrics::Statistics<> dut;
+    Metrics::Variance<> dut;
 
     EXPECT_TRUE(std::isnan(dut.variance()));
     EXPECT_TRUE(std::isnan(dut.stddev()));
@@ -58,8 +58,22 @@ TEST(TestStatistics, variance) {
     EXPECT_DOUBLE_EQ(sqrt(2.0 * 4.0 / 3.0), dut.sample_stddev());
 }
 
+TEST(TestStatistics, varianceHighOffset) {
+    // Example from
+    // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Example
+    // - demo correct behavior when high offset
+    constexpr double offset = 1e9;
+    Metrics::Variance<> dut;
+    dut.update(offset + 4);
+    dut.update(offset + 7);
+    dut.update(offset + 13);
+    dut.update(offset + 16);
+    EXPECT_EQ(4, dut.count());
+    EXPECT_DOUBLE_EQ(30.0, dut.sample_variance());
+}
+
 TEST(TestStatistics, reset) {
-    Metrics::Statistics<> dut;
+    Metrics::Variance<> dut;
 
     dut.update(-1);
     dut.reset();
@@ -75,7 +89,7 @@ TEST(TestStatistics, reset) {
 }
 
 TEST(TestStatistics, toString) {
-    Metrics::Statistics<> dut;
+    Metrics::Variance<> dut;
 
     EXPECT_EQ(0, dut.toString(1).find("count(0) min(nan) mean(nan) max(nan)"));
     dut.update(1);

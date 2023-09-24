@@ -3,7 +3,7 @@
 
 #include "IMetric.hpp"
 #include "IReservoir.hpp"
-#include "Statistics.hpp"
+#include "Variance.hpp"
 #include <cmath>
 #include <iomanip>
 #include <sstream>
@@ -38,7 +38,7 @@ template <typename T, typename U = double> class Histogram : public IMetric {
            << "), max(" << snapshot.getValue(1.00) << ")";
 
         if (_withStats) {
-            Statistics<U> stats{};
+            Variance<U> stats{};
             for (auto x : snapshot.values()) {
                 stats.update(x);
             }

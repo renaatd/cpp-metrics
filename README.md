@@ -1,4 +1,5 @@
 # C++ Metrics
+![Build status](https://github.com/renaatd/cpp-metrics/actions/workflows/cmake.yml/badge.svg)
 
 C++ Metrics is a header-only library to measure parameter distributions in an embedded application. The library is written for personal (re)use.
 

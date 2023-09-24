@@ -19,11 +19,12 @@ FetchContent_MakeAvailable(googletest)
 add_executable(UnitTests
     ./TestGauge.cpp
     ./TestHistogram.cpp
+    ./TestKurtosis.cpp
     ./TestMinMeanMax.cpp
     ./TestSamplingReservoir.cpp
     ./TestSlidingWindowReservoir.cpp
     ./TestSnapshot.cpp
-    ./TestStatistics.cpp
+    ./TestVariance.cpp
 )
 target_link_libraries(UnitTests
     Metrics
