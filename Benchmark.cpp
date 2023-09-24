@@ -8,6 +8,7 @@
 #include "Metrics/Variance.hpp"
 #include "elapsed.hpp"
 #include <iostream>
+#include <vector>
 
 const int LOOPS_UPDATE = 5000000;
 const int LOOPS_SNAPSHOT = 10000;
@@ -165,7 +166,7 @@ int main() {
     }
 
     {
-        std::cout << "Histogram<SlidingWindowReservoir<double> >(10000)"
+        std::cout << "Histogram<SlidingWindowReservoir<double>,double>(10000)"
                   << std::endl;
         Metrics::Histogram<Metrics::SlidingWindowReservoir<double>, double>
             histogram{10000, true, 21};
@@ -197,26 +198,39 @@ int main() {
     }
 
     {
-        std::cout << "Histogram<SamplingReservoir<double> >(1000)" << std::endl;
+        std::cout << "Histogram<SamplingReservoir<double>,double>(1000)"
+                  << std::endl;
         Metrics::Histogram<Metrics::SamplingReservoir<double>, double>
             histogram{1000, true, 31};
         Metrics::Variance<double> stats{};
         std::mt19937 random_generator;
         std::normal_distribution<> distribution{100, 10};
-        for (int i = 0; i < 100; i++) {
-            auto value = distribution(random_generator);
-            histogram.update(value);
-            stats.update(value);
+
+        // first generate a vector with all random values
+        Elapsed elapsedGenerate;
+        auto values = std::vector<double>(10000, 0.0);
+        for (unsigned i = 0; i < values.size(); i++) {
+            values[i] = distribution(random_generator);
+        }
+        double generate_ns_per_value =
+            static_cast<double>(elapsedGenerate.ElapsedUs()) * 1000.0 /
+            values.size();
+        printf("generate random values, time per value: %.1lf ns\n",
+               generate_ns_per_value);
+
+        for (unsigned i = 0; i < 100; i++) {
+            histogram.update(values[i]);
+            stats.update(values[i]);
         }
         std::cout << "After 100 adds:" << std::endl << histogram.toString(1);
         std::cout << "Stats: " << stats.toString(1) << std::endl << std::endl;
 
-        for (int i = 0; i < 10000; i++) {
-            auto value = distribution(random_generator);
-            histogram.update(value);
-            stats.update(value);
+        for (unsigned i = 100; i < values.size(); i++) {
+            histogram.update(values[i]);
+            stats.update(values[i]);
         }
-        std::cout << "After 10000 adds:" << std::endl << histogram.toString(1);
+        std::cout << "After " << values.size() << " adds:" << std::endl
+                  << histogram.toString(1);
         std::cout << "Stats: " << stats.toString(1) << std::endl << std::endl;
     }
 
