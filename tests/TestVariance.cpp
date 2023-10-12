@@ -4,7 +4,7 @@
 
 namespace {
 
-TEST(TestStatistics, singleValue) {
+TEST(TestVariance, singleValue) {
     Metrics::Variance<> dut;
 
     EXPECT_TRUE(std::isnan(dut.mean()));
@@ -14,7 +14,7 @@ TEST(TestStatistics, singleValue) {
     EXPECT_EQ(-1, dut.max());
 }
 
-TEST(TestStatistics, threeValues) {
+TEST(TestVariance, threeValues) {
     Metrics::Variance<> dut;
 
     dut.update(1);
@@ -26,7 +26,48 @@ TEST(TestStatistics, threeValues) {
     EXPECT_EQ(3, dut.count());
 }
 
-TEST(TestStatistics, variance) {
+TEST(TestVariance, threeValuesCompoundPlus) {
+    Metrics::Variance<> dut1;
+    dut1.update(1);
+    dut1.update(2);
+    dut1.update(3);
+
+    // add empty DUT to non-empty DUT
+    Metrics::Variance<> dut2;
+    dut1 += dut2;
+
+    EXPECT_EQ(1, dut1.min());
+    EXPECT_EQ(2, dut1.mean());
+    EXPECT_EQ(3, dut1.max());
+    EXPECT_EQ(3, dut1.count());
+    EXPECT_EQ(0, dut2.count());
+
+    // add non-empty DUT to empty DUT
+    dut2 += dut1;
+
+    EXPECT_EQ(1, dut2.min());
+    EXPECT_EQ(2, dut2.mean());
+    EXPECT_EQ(3, dut2.max());
+    EXPECT_EQ(3, dut2.count());
+    EXPECT_EQ(3, dut1.count());
+
+    // add non-empty DUT to non-empty DUT
+    dut1.reset();
+    dut2.reset();
+    dut1.update(1);
+    dut2.update(2);
+    dut2.update(3);
+
+    dut1 += dut2;
+
+    EXPECT_EQ(1, dut1.min());
+    EXPECT_EQ(2, dut1.mean());
+    EXPECT_EQ(3, dut1.max());
+    EXPECT_EQ(3, dut1.count());
+    EXPECT_EQ(2, dut2.count());
+}
+
+TEST(TestVariance, variance) {
     Metrics::Variance<> dut;
 
     EXPECT_TRUE(std::isnan(dut.variance()));
@@ -58,7 +99,7 @@ TEST(TestStatistics, variance) {
     EXPECT_DOUBLE_EQ(sqrt(2.0 * 4.0 / 3.0), dut.sample_stddev());
 }
 
-TEST(TestStatistics, varianceHighOffset) {
+TEST(TestVariance, varianceHighOffset) {
     // Example from
     // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Example
     // - demo correct behavior when high offset
@@ -72,7 +113,23 @@ TEST(TestStatistics, varianceHighOffset) {
     EXPECT_DOUBLE_EQ(30.0, dut.sample_variance());
 }
 
-TEST(TestStatistics, reset) {
+TEST(TestVariance, varianceHighOffsetCompoundPlus) {
+    // Example from
+    // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Example
+    // - demo correct behavior when high offset
+    constexpr double offset = 1e9;
+    Metrics::Variance<> dut1;
+    dut1.update(offset + 4);
+    dut1.update(offset + 7);
+    Metrics::Variance<> dut2;
+    dut2.update(offset + 13);
+    dut2.update(offset + 16);
+    dut1 += dut2;
+    EXPECT_EQ(2, dut2.count());
+    EXPECT_EQ(4, dut1.count());
+    EXPECT_DOUBLE_EQ(30.0, dut1.sample_variance());
+}
+TEST(TestVariance, reset) {
     Metrics::Variance<> dut;
 
     dut.update(-1);
@@ -88,7 +145,7 @@ TEST(TestStatistics, reset) {
     EXPECT_EQ(1, dut.count());
 }
 
-TEST(TestStatistics, toString) {
+TEST(TestVariance, toString) {
     Metrics::Variance<> dut;
 
     EXPECT_EQ(0, dut.toString(1).find("count(0) min(nan) mean(nan) max(nan)"));

@@ -32,6 +32,32 @@ class MinMeanMax : public IMetric {
         _sum += value;
     }
 
+    MinMeanMax &operator+=(const MinMeanMax &rhs) {
+        const std::lock_guard<M> lock(_mutex);
+        const std::lock_guard<M> lock_rhs(rhs._mutex);
+
+        if (_count == 0 && rhs._count == 0) {
+            return *this;
+        }
+
+        if (_count == 0) {
+            _min = rhs._min;
+            _max = rhs._max;
+        } else if (rhs._count != 0) {
+            _min = std::min(_min, rhs._min);
+            _max = std::max(_max, rhs._max);
+        }
+
+        _count += rhs._count;
+        _sum += rhs._sum;
+        return *this;
+    }
+
+    friend MinMeanMax operator+(MinMeanMax lhs, const MinMeanMax &rhs) {
+        lhs += rhs;
+        return lhs;
+    }
+
     int count() const {
         const std::lock_guard<M> lock(_mutex);
         return count_nolock();

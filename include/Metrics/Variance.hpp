@@ -1,5 +1,5 @@
-#ifndef METRICS_STATISTICS_HPP
-#define METRICS_STATISTICS_HPP
+#ifndef METRICS_VARIANCE_HPP
+#define METRICS_VARIANCE_HPP
 
 #include "IMetric.hpp"
 #include <algorithm>
@@ -41,6 +41,34 @@ class Variance : public IMetric {
 
         const T delta2 = value - _mean;
         _m2 += delta * delta2;
+    }
+
+    Variance &operator+=(const Variance &rhs) {
+        const std::lock_guard<M> lock(_mutex);
+        const std::lock_guard<M> lock_rhs(rhs._mutex);
+
+        if (_count == 0 && rhs._count == 0) {
+            return *this;
+        }
+        if (_count == 0) {
+            _min = rhs._min;
+            _max = rhs._max;
+        } else if (rhs._count != 0) {
+            _min = std::min(_min, rhs._min);
+            _max = std::max(_max, rhs._max);
+        }
+
+        const int count_both = _count + rhs._count;
+        const T delta = rhs._mean - _mean;
+        _mean = (_count * _mean + rhs._count * rhs._mean) / count_both;
+        _m2 += rhs._m2 + delta * delta * _count * rhs._count / count_both;
+        _count = count_both;
+        return *this;
+    }
+
+    friend Variance operator+(Variance lhs, const Variance &rhs) {
+        lhs += rhs;
+        return lhs;
     }
 
     int count() const {
