@@ -53,11 +53,6 @@ class MinMeanMax : public IMetric {
         return *this;
     }
 
-    friend MinMeanMax operator+(MinMeanMax lhs, const MinMeanMax &rhs) {
-        lhs += rhs;
-        return lhs;
-    }
-
     int count() const {
         const std::lock_guard<M> lock(_mutex);
         return count_nolock();

@@ -66,11 +66,6 @@ class Variance : public IMetric {
         return *this;
     }
 
-    friend Variance operator+(Variance lhs, const Variance &rhs) {
-        lhs += rhs;
-        return lhs;
-    }
-
     int count() const {
         const std::lock_guard<M> lock(_mutex);
         return count_nolock();

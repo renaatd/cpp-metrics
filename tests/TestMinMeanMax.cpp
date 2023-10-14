@@ -79,6 +79,29 @@ TEST(TestMinMeanMax, operator_compound_plus) {
     EXPECT_EQ(4, dut1.count());
 }
 
+#if 0
+TEST(TestMinMeanMax, operator_plus) {
+    Metrics::MinMeanMax<> dut1;
+    Metrics::MinMeanMax<> dut2;
+
+    // adding 2 non-empty DUTs
+    dut1.update(-1);
+    dut1.update(-3);
+
+    dut2.update(-5);
+    dut2.update(-7);
+
+    auto dut3 = dut1 + dut2;
+    EXPECT_EQ(-7, dut3.min());
+    EXPECT_EQ(-4, dut3.mean());
+    EXPECT_EQ(-1, dut3.max());
+    EXPECT_EQ(4, dut3.count());
+
+    EXPECT_EQ(2, dut1.count());
+    EXPECT_EQ(2, dut2.count());
+}
+#endif
+
 TEST(TestMinMeanMax, toString) {
     Metrics::MinMeanMax<> dut;
 
