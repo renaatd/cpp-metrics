@@ -65,6 +65,10 @@ TEST(TestVariance, threeValuesCompoundPlus) {
     EXPECT_EQ(3, dut1.max());
     EXPECT_EQ(3, dut1.count());
     EXPECT_EQ(2, dut2.count());
+
+    // should not deadlock
+    dut1 += dut1;
+    EXPECT_EQ(6, dut1.count());
 }
 
 TEST(TestVariance, variance) {
@@ -129,6 +133,7 @@ TEST(TestVariance, varianceHighOffsetCompoundPlus) {
     EXPECT_EQ(4, dut1.count());
     EXPECT_DOUBLE_EQ(30.0, dut1.sample_variance());
 }
+
 TEST(TestVariance, reset) {
     Metrics::Variance<> dut;
 
