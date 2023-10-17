@@ -20,6 +20,7 @@ add_executable(UnitTests
     ./TestGauge.cpp
     ./TestHistogram.cpp
     ./TestKurtosis.cpp
+    ./TestMinMax.cpp
     ./TestMinMeanMax.cpp
     ./TestSamplingReservoir.cpp
     ./TestSlidingWindowReservoir.cpp

@@ -2,6 +2,7 @@
 #define METRICS_VARIANCE_HPP
 
 #include "IMetric.hpp"
+#include "MinMax.hpp"
 #include <algorithm>
 #include <cmath>
 #include <iomanip>
@@ -10,137 +11,188 @@
 #include <string>
 
 namespace Metrics {
+namespace Internals {
 /** Calculate 2nd order statistics incrementally using Welford's algorithm */
-template <typename T = double, typename M = std::mutex>
-class Variance : public IMetric {
+template <typename T = double> class VarianceNoLock {
   public:
-    void reset() override {
-        const std::lock_guard<M> lock(_mutex);
-        _count = 0;
+    void reset() {
+        _minmax.reset();
         _mean = {};
         _m2 = {};
     }
 
     void update(T value) {
-        const std::lock_guard<M> lock(_mutex);
-
-        if (_count == 0) {
-            _min = value;
-            _max = value;
-        } else {
-            _min = std::min(value, _min);
-            _max = std::max(value, _max);
-        }
-
-        _count++;
+        _minmax.update(value);
 
         // use Welford's algorithm to keep errors low when there is a large
         // offset
         const T delta = value - _mean;
-        _mean += delta / _count;
+        _mean += delta / _minmax.count();
 
         const T delta2 = value - _mean;
         _m2 += delta * delta2;
     }
 
-    Variance &operator+=(const Variance &rhs) {
-        const std::lock_guard<M> lock(_mutex);
-        const std::lock_guard<M> lock_rhs(rhs._mutex);
-
-        if (_count == 0 && rhs._count == 0) {
+    VarianceNoLock &operator+=(const VarianceNoLock &rhs) {
+        const auto count_both = count() + rhs.count();
+        if (count_both == 0) {
             return *this;
         }
-        if (_count == 0) {
-            _min = rhs._min;
-            _max = rhs._max;
-        } else if (rhs._count != 0) {
-            _min = std::min(_min, rhs._min);
-            _max = std::max(_max, rhs._max);
-        }
-
-        const int count_both = _count + rhs._count;
         const T delta = rhs._mean - _mean;
-        _mean = (_count * _mean + rhs._count * rhs._mean) / count_both;
-        _m2 += rhs._m2 + delta * delta * _count * rhs._count / count_both;
-        _count = count_both;
+        _mean = (count() * _mean + rhs.count() * rhs._mean) / count_both;
+        _m2 += rhs._m2 + delta * delta * count() * rhs.count() / count_both;
+        _minmax += rhs._minmax;
         return *this;
     }
 
-    int count() const {
-        const std::lock_guard<M> lock(_mutex);
-        return count_nolock();
-    }
+    int64_t count() const { return _minmax.count(); }
 
-    T min() const {
-        const std::lock_guard<M> lock(_mutex);
-        return min_nolock();
-    }
+    T min() const { return _minmax.min(); }
 
-    T mean() const {
-        const std::lock_guard<M> lock(_mutex);
-        return mean_nolock();
-    }
+    T mean() const { return (_minmax.count() == 0) ? NAN : _mean; }
 
-    T max() const {
-        const std::lock_guard<M> lock(_mutex);
-        return max_nolock();
-    }
+    T max() const { return _minmax.max(); }
 
     /** variance of a population */
     T variance() const {
-        const std::lock_guard<M> lock(_mutex);
-        return variance_nolock();
+        return (_minmax.count() < 1) ? NAN : (_m2 / _minmax.count());
     }
 
     /** standard deviation of a population */
-    T stddev() const {
-        const std::lock_guard<M> lock(_mutex);
-        return stddev_nolock();
-    }
+    T stddev() const { return sqrt(variance()); }
 
     /** variance of a sample from a population */
     T sample_variance() const {
-        const std::lock_guard<M> lock(_mutex);
-        return sample_variance_nolock();
+        return (_minmax.count() < 2) ? NAN : (_m2 / (_minmax.count() - 1));
     }
 
     /** standard deviation of a sample of a population */
-    T sample_stddev() const {
-        const std::lock_guard<M> lock(_mutex);
-        return sample_stddev_nolock();
-    }
+    T sample_stddev() const { return sqrt(sample_variance()); }
 
-    std::string toString(int precision = -1) const override {
-        const std::lock_guard<M> lock(_mutex);
+    std::string toString(int precision = -1) const {
         std::ostringstream os;
         if (precision > -1) {
             os << std::fixed << std::setprecision(precision);
         }
-        os << "count(" << count_nolock() << ") min(" << min_nolock()
-           << ") mean(" << mean_nolock() << ") max(" << max_nolock()
-           << ") stddev(" << stddev_nolock() << ") sample_stddev("
-           << sample_stddev_nolock() << ")";
+        os << "count(" << _minmax.count() << ") min(" << min() << ") mean("
+           << mean() << ") max(" << max() << ") sample_stddev("
+           << sample_stddev() << ")";
         return os.str();
     }
 
   private:
-    int count_nolock() const { return _count; }
-
-    T min_nolock() const { return (_count == 0) ? NAN : _min; }
-    T mean_nolock() const { return (_count == 0) ? NAN : _mean; }
-    T max_nolock() const { return (_count == 0) ? NAN : _max; }
-    T variance_nolock() const { return (_count < 1) ? NAN : (_m2 / _count); }
-    T stddev_nolock() const { return sqrt(variance_nolock()); }
-    T sample_variance_nolock() const {
-        return (_count < 2) ? NAN : (_m2 / (_count - 1));
-    }
-    T sample_stddev_nolock() const { return sqrt(sample_variance_nolock()); }
-
-    int _count = 0;
-    T _min{};
-    T _max{};
+    MinMaxNoLock<T> _minmax{};
     T _mean{};
     T _m2{};
+};
+
+} // namespace Internals
+/** Calculate 2nd order statistics incrementally using Welford's algorithm */
+template <typename T = double, typename M = std::mutex>
+class Variance : public IMetric {
+    using lock_guard = const std::lock_guard<M>;
+
+  public:
+    Variance() = default;
+    ~Variance() override = default;
+
+    Variance(const Variance &other) {
+        // copy constructor
+        lock_guard lock_other(other._mutex);
+        _state = other._state;
+    }
+
+    Variance &operator=(const Variance &other) {
+        // copy assignment
+        if (this == &other) {
+            return *this;
+        }
+        lock_guard lock(_mutex);
+        lock_guard lock_other(other._mutex);
+        _state = other._state;
+        return *this;
+    }
+
+    void reset() override {
+        lock_guard lock(_mutex);
+        _state.reset();
+    }
+
+    void update(T value) {
+        lock_guard lock(_mutex);
+        _state.update(value);
+    }
+
+    Variance &operator+=(const Variance &rhs) {
+        lock_guard lock(_mutex);
+        if (&rhs == this) {
+            // second lock_guard would deadlock
+            _state += rhs._state;
+            return *this;
+        }
+
+        lock_guard lock_rhs(rhs._mutex);
+        _state += rhs._state;
+        return *this;
+    }
+
+    friend inline Variance operator+(const Variance &lhs, const Variance &rhs) {
+        Variance result = lhs;
+        result += rhs;
+        return result;
+    }
+
+    int64_t count() const {
+        lock_guard lock(_mutex);
+        return _state.count();
+    }
+
+    T min() const {
+        lock_guard lock(_mutex);
+        return _state.min();
+    }
+
+    T mean() const {
+        lock_guard lock(_mutex);
+        return _state.mean();
+    }
+
+    T max() const {
+        lock_guard lock(_mutex);
+        return _state.max();
+    }
+
+    /** variance of a population */
+    T variance() const {
+        lock_guard lock(_mutex);
+        return _state.variance();
+    }
+
+    /** standard deviation of a population */
+    T stddev() const {
+        lock_guard lock(_mutex);
+        return _state.stddev();
+    }
+
+    /** variance of a sample from a population */
+    T sample_variance() const {
+        lock_guard lock(_mutex);
+        return _state.sample_variance();
+    }
+
+    /** standard deviation of a sample of a population */
+    T sample_stddev() const {
+        lock_guard lock(_mutex);
+        return _state.sample_stddev();
+    }
+
+    std::string toString(int precision = -1) const override {
+        lock_guard lock(_mutex);
+        return _state.toString(precision);
+    }
+
+  private:
+    Internals::VarianceNoLock<T> _state{};
     mutable M _mutex{};
 };
 

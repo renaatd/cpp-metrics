@@ -2,6 +2,7 @@
 #define METRICS_KURTOSIS_HPP
 
 #include "IMetric.hpp"
+#include "MinMax.hpp"
 #include <algorithm>
 #include <cmath>
 #include <iomanip>
@@ -10,33 +11,25 @@
 #include <string>
 
 namespace Metrics {
+namespace Internals {
 /** Calculate 4th order statistics online */
-template <typename T = double, typename M = std::mutex>
-class Kurtosis : public IMetric {
+template <typename T = double> class KurtosisNoLock {
   public:
-    void reset() override {
-        const std::lock_guard<M> lock(_mutex);
-        _count = 0;
+    void reset() {
+        _minmax.reset();
         _mean = {};
         _m2 = {};
+        _m3 = {};
+        _m4 = {};
     }
 
     void update(T value) {
-        const std::lock_guard<M> lock(_mutex);
+        auto n1 = _minmax.count();
+        _minmax.update(value);
 
-        if (_count == 0) {
-            _min = value;
-            _max = value;
-        } else {
-            _min = std::min(value, _min);
-            _max = std::max(value, _max);
-        }
-
-        auto n1 = _count;
-        _count++;
-        const T n = static_cast<T>(_count);
+        const T n = static_cast<T>(n1 + 1);
         const T delta = value - _mean;
-        const T delta_n = delta / _count;
+        const T delta_n = delta / n;
         const T delta_n2 = delta_n * delta_n;
         const T term1 = delta * delta_n * n1;
 
@@ -47,104 +40,161 @@ class Kurtosis : public IMetric {
         _m2 += term1;
     }
 
-    int count() const {
-        const std::lock_guard<M> lock(_mutex);
-        return count_nolock();
-    }
+    int64_t count() const { return _minmax.count(); }
 
-    T min() const {
-        const std::lock_guard<M> lock(_mutex);
-        return min_nolock();
-    }
+    T min() const { return _minmax.min(); }
 
-    T mean() const {
-        const std::lock_guard<M> lock(_mutex);
-        return mean_nolock();
-    }
+    T mean() const { return (_minmax.count() == 0) ? NAN : _mean; }
 
-    T max() const {
-        const std::lock_guard<M> lock(_mutex);
-        return max_nolock();
-    }
+    T max() const { return _minmax.max(); }
 
     /** variance of a population */
     T variance() const {
-        const std::lock_guard<M> lock(_mutex);
-        return variance_nolock();
+        return (_minmax.count() < 1) ? NAN : (_m2 / _minmax.count());
     }
 
     /** standard deviation of a population */
-    T stddev() const {
-        const std::lock_guard<M> lock(_mutex);
-        return stddev_nolock();
-    }
+    T stddev() const { return sqrt(variance()); }
 
     /** variance of a sample from a population */
     T sample_variance() const {
-        const std::lock_guard<M> lock(_mutex);
-        return sample_variance_nolock();
+        return (_minmax.count() < 2) ? NAN : (_m2 / (_minmax.count() - 1));
     }
 
     /** standard deviation of a sample of a population */
-    T sample_stddev() const {
-        const std::lock_guard<M> lock(_mutex);
-        return sample_stddev_nolock();
-    }
+    T sample_stddev() const { return sqrt(sample_variance()); }
 
-    T excess_kurtosis() const {
-        const std::lock_guard<M> lock(_mutex);
-        return excess_kurtosis_nolock();
-    }
+    T excess_kurtosis() const { return kurtosis() - 3; }
 
-    T kurtosis() const {
-        const std::lock_guard<M> lock(_mutex);
-        return kurtosis_nolock();
-    }
+    T kurtosis() const { return (_minmax.count() * _m4) / (_m2 * _m2); }
 
     T skew() const {
-        const std::lock_guard<M> lock(_mutex);
-        return skew_nolock();
+        return sqrt(static_cast<T>(_minmax.count())) * _m3 / (pow(_m2, 1.5));
     }
 
-    std::string toString(int precision = -1) const override {
-        const std::lock_guard<M> lock(_mutex);
+    std::string toString(int precision = -1) const {
         std::ostringstream os;
         if (precision > -1) {
             os << std::fixed << std::setprecision(precision);
         }
-        os << "count(" << count_nolock() << ") min(" << min_nolock()
-           << ") mean(" << mean_nolock() << ") max(" << max_nolock()
-           << ") stddev(" << stddev_nolock() << ") sample_stddev("
-           << sample_stddev_nolock() << ") skew(" << skew_nolock()
-           << ") excess_kurtosis(" << excess_kurtosis_nolock() << ")";
+        os << "count(" << count() << ") min(" << min() << ") mean(" << mean()
+           << ") max(" << max() << ") sample_stddev(" << sample_stddev()
+           << ") skew(" << skew() << ") excess_kurtosis(" << excess_kurtosis()
+           << ")";
         return os.str();
     }
 
   private:
-    int count_nolock() const { return _count; }
-
-    T min_nolock() const { return (_count == 0) ? NAN : _min; }
-    T mean_nolock() const { return (_count == 0) ? NAN : _mean; }
-    T max_nolock() const { return (_count == 0) ? NAN : _max; }
-    T variance_nolock() const { return (_count < 1) ? NAN : (_m2 / _count); }
-    T stddev_nolock() const { return sqrt(variance_nolock()); }
-    T sample_variance_nolock() const {
-        return (_count < 2) ? NAN : (_m2 / (_count - 1));
-    }
-    T sample_stddev_nolock() const { return sqrt(sample_variance_nolock()); }
-    T kurtosis_nolock() const { return (_count * _m4) / (_m2 * _m2); }
-    T excess_kurtosis_nolock() const { return kurtosis_nolock() - 3; }
-    T skew_nolock() const {
-        return sqrt(static_cast<T>(_count)) * _m3 / (pow(_m2, 1.5));
-    }
-
-    int _count = 0;
-    T _min{};
-    T _max{};
+    MinMaxNoLock<T> _minmax{};
     T _mean{};
     T _m2{};
     T _m3{};
     T _m4{};
+};
+
+} // namespace Internals
+/** Calculate 4th order statistics online */
+template <typename T = double, typename M = std::mutex>
+class Kurtosis : public IMetric {
+    using lock_guard = const std::lock_guard<M>;
+
+  public:
+    Kurtosis() = default;
+    ~Kurtosis() override = default;
+
+    Kurtosis(const Kurtosis &other) {
+        // copy constructor
+        lock_guard lock_other(other._mutex);
+        _state = other._state;
+    }
+
+    Kurtosis &operator=(const Kurtosis &other) {
+        // copy assignment
+        if (this == &other) {
+            return *this;
+        }
+        lock_guard lock(_mutex);
+        lock_guard lock_other(other._mutex);
+        _state = other._state;
+        return *this;
+    }
+
+    void reset() override {
+        lock_guard lock(_mutex);
+        _state.reset();
+    }
+
+    void update(T value) {
+        lock_guard lock(_mutex);
+        _state.update(value);
+    }
+
+    int64_t count() const {
+        lock_guard lock(_mutex);
+        return _state.count();
+    }
+
+    T min() const {
+        lock_guard lock(_mutex);
+        return _state.min();
+    }
+
+    T mean() const {
+        lock_guard lock(_mutex);
+        return _state.mean();
+    }
+
+    T max() const {
+        lock_guard lock(_mutex);
+        return _state.max();
+    }
+
+    /** variance of a population */
+    T variance() const {
+        lock_guard lock(_mutex);
+        return _state.variance();
+    }
+
+    /** standard deviation of a population */
+    T stddev() const {
+        lock_guard lock(_mutex);
+        return _state.stddev();
+    }
+
+    /** variance of a sample from a population */
+    T sample_variance() const {
+        lock_guard lock(_mutex);
+        return _state.sample_variance();
+    }
+
+    /** standard deviation of a sample of a population */
+    T sample_stddev() const {
+        lock_guard lock(_mutex);
+        return _state.sample_stddev();
+    }
+
+    T excess_kurtosis() const {
+        lock_guard lock(_mutex);
+        return _state.excess_kurtosis();
+    }
+
+    T kurtosis() const {
+        lock_guard lock(_mutex);
+        return _state.kurtosis();
+    }
+
+    T skew() const {
+        lock_guard lock(_mutex);
+        return _state.skew();
+    }
+
+    std::string toString(int precision = -1) const override {
+        lock_guard lock(_mutex);
+        return _state.toString(precision);
+    }
+
+  private:
+    Internals::KurtosisNoLock<T> _state{};
     mutable M _mutex{};
 };
 

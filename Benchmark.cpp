@@ -1,6 +1,7 @@
 #include "Metrics/Gauge.hpp"
 #include "Metrics/Histogram.hpp"
 #include "Metrics/Kurtosis.hpp"
+#include "Metrics/MinMax.hpp"
 #include "Metrics/MinMeanMax.hpp"
 #include "Metrics/Registry.hpp"
 #include "Metrics/SamplingReservoir.hpp"
@@ -23,6 +24,19 @@ class DummyMutex {
 int main() {
     std::cout << "Looping, no of iterations: " << LOOPS_UPDATE << std::endl;
     {
+        std::cout << "MinMax<>()" << std::endl;
+        Metrics::MinMax<> stats;
+        Elapsed s;
+        for (int i = 0; i < LOOPS_UPDATE; i++) {
+            stats.update(i);
+        }
+        double ns_per_loop =
+            static_cast<double>(s.ElapsedUs()) * 1000.0 / LOOPS_UPDATE;
+        std::cout << "Stats: " << stats.toString(1) << std::endl;
+        printf("time per loop: %.1lf ns\n\n", ns_per_loop);
+    }
+
+    {
         std::cout << "MinMeanMax<>()" << std::endl;
         Metrics::MinMeanMax<> stats;
         Elapsed s;
@@ -36,7 +50,7 @@ int main() {
     }
 
     {
-        std::cout << "Statistics<>()" << std::endl;
+        std::cout << "Variance<>()" << std::endl;
         Metrics::Variance<> stats;
         Elapsed s;
         for (int i = 0; i < LOOPS_UPDATE; i++) {
@@ -49,7 +63,7 @@ int main() {
     }
 
     {
-        std::cout << "Statistics<double,DummyMutex>()" << std::endl;
+        std::cout << "Variance<double,DummyMutex>()" << std::endl;
         Metrics::Variance<double, DummyMutex> stats;
         Elapsed s;
         for (int i = 0; i < LOOPS_UPDATE; i++) {
@@ -259,7 +273,7 @@ int main() {
             }
             double ns_per_loop =
                 static_cast<double>(s.ElapsedUs()) * 1000.0 / LOOPS_UPDATE;
-            printf("updating shared_ptr<Statistics> time per loop: %.1lf ns\n",
+            printf("updating shared_ptr<Variance> time per loop: %.1lf ns\n",
                    ns_per_loop);
         }
         std::cout << "Registry:" << std::endl

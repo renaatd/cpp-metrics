@@ -29,3 +29,16 @@ target_compile_options(Benchmark
     -Weffc++
     -Wextra
 )
+
+add_executable(ShowSize
+    ./ShowSize.cpp
+)
+target_link_libraries(ShowSize
+    Metrics
+)
+target_compile_options(ShowSize
+    PRIVATE
+    -Wall
+    -Weffc++
+    -Wextra
+)

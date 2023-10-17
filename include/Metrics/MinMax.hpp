@@ -1,9 +1,9 @@
-#ifndef METRICS_MINMEANMAX_HPP
-#define METRICS_MINMEANMAX_HPP
+#ifndef METRICS_MINMAX_HPP
+#define METRICS_MINMAX_HPP
 
 #include "IMetric.hpp"
-#include "MinMax.hpp"
 #include <cmath>
+#include <cstdint>
 #include <iomanip>
 #include <mutex>
 #include <sstream>
@@ -11,73 +11,85 @@
 
 namespace Metrics {
 namespace Internals {
-template <typename T = double> class MinMeanMaxNoLock {
+template <typename T = double> class MinMaxNoLock {
   public:
-    void reset() {
-        _minmax.reset();
-        _sum = {};
-    }
+    void reset() { _count = {}; }
 
     void update(T value) {
-        _minmax.update(value);
-        _sum += value;
+        if (_count == 0) {
+            _min = value;
+            _max = value;
+        } else {
+            _min = std::min(value, _min);
+            _max = std::max(value, _max);
+        }
+
+        _count++;
     }
 
-    MinMeanMaxNoLock &operator+=(const MinMeanMaxNoLock &rhs) {
-        _minmax += rhs._minmax;
-        _sum += rhs._sum;
+    MinMaxNoLock &operator+=(const MinMaxNoLock &rhs) {
+        if (_count == 0 && rhs._count == 0) {
+            return *this;
+        }
+
+        if (_count == 0) {
+            _min = rhs._min;
+            _max = rhs._max;
+        } else if (rhs._count != 0) {
+            _min = std::min(_min, rhs._min);
+            _max = std::max(_max, rhs._max);
+        }
+
+        _count += rhs._count;
         return *this;
     }
 
-    friend inline MinMeanMaxNoLock operator+(const MinMeanMaxNoLock &lhs,
-                                             const MinMeanMaxNoLock &rhs) {
-        MinMeanMaxNoLock result = lhs;
+    friend inline MinMaxNoLock operator+(const MinMaxNoLock &lhs,
+                                         const MinMaxNoLock &rhs) {
+        MinMaxNoLock result = lhs;
         result += rhs;
         return result;
     }
 
-    int64_t count() const { return _minmax.count(); }
+    int64_t count() const { return _count; }
 
-    T min() const { return _minmax.min(); }
+    T min() const { return (_count == 0) ? NAN : _min; }
 
-    T mean() const {
-        auto current_count = _minmax.count();
-        return (current_count == 0) ? NAN : _sum / current_count;
-    }
-
-    T max() const { return _minmax.max(); }
+    T max() const { return (_count == 0) ? NAN : _max; }
 
     std::string toString(int precision = -1) const {
         std::ostringstream os;
         if (precision > -1) {
             os << std::fixed << std::setprecision(precision);
         }
-        os << "count(" << count() << ") min(" << min() << ") mean(" << mean()
-           << ") max(" << max() << ")";
+        os << "count(" << count() << ") min(" << min() << ") max(" << max()
+           << ")";
         return os.str();
     }
 
   private:
-    MinMaxNoLock<T> _minmax{};
-    T _sum{};
+    int64_t _count = 0;
+    T _min{};
+    T _max{};
 };
+
 } // namespace Internals
 
 template <typename T = double, typename M = std::mutex>
-class MinMeanMax : public IMetric {
+class MinMax : public IMetric {
     using lock_guard = const std::lock_guard<M>;
 
   public:
-    MinMeanMax() = default;
-    ~MinMeanMax() override = default;
+    MinMax() = default;
+    ~MinMax() override = default;
 
-    MinMeanMax(const MinMeanMax &other) {
+    MinMax(const MinMax &other) {
         // copy constructor
         lock_guard lock_other(other._mutex);
         _state = other._state;
     }
 
-    MinMeanMax &operator=(const MinMeanMax &other) {
+    MinMax &operator=(const MinMax &other) {
         // copy assignment
         if (this == &other) {
             return *this;
@@ -98,7 +110,7 @@ class MinMeanMax : public IMetric {
         _state.update(value);
     }
 
-    MinMeanMax &operator+=(const MinMeanMax &rhs) {
+    MinMax &operator+=(const MinMax &rhs) {
         lock_guard lock(_mutex);
         if (&rhs == this) {
             // second lock_guard would deadlock
@@ -111,14 +123,13 @@ class MinMeanMax : public IMetric {
         return *this;
     }
 
-    friend inline MinMeanMax operator+(const MinMeanMax &lhs,
-                                       const MinMeanMax &rhs) {
-        MinMeanMax result = lhs;
+    friend inline MinMax operator+(const MinMax &lhs, const MinMax &rhs) {
+        MinMax result = lhs;
         result += rhs;
         return result;
     }
 
-    int64_t count() const {
+    int count() const {
         lock_guard lock(_mutex);
         return _state.count();
     }
@@ -126,11 +137,6 @@ class MinMeanMax : public IMetric {
     T min() const {
         lock_guard lock(_mutex);
         return _state.min();
-    }
-
-    T mean() const {
-        lock_guard lock(_mutex);
-        return _state.mean();
     }
 
     T max() const {
@@ -144,7 +150,7 @@ class MinMeanMax : public IMetric {
     }
 
   private:
-    Internals::MinMeanMaxNoLock<T> _state{};
+    Internals::MinMaxNoLock<T> _state{};
     mutable M _mutex{};
 };
 
