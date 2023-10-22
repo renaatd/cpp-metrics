@@ -114,19 +114,16 @@ class MinMax : public IMetric {
     }
 
     MinMax &operator+=(const MinMax &rhs) {
-        if (&rhs == this) {
-            // second lock_guard would deadlock when doing a+=a
-            lock_guard lock(_mutex);
-            _state += rhs._state;
-            return *this;
-        }
-
         // In the very unlikely case that 2 threads simultaneously do a+=b and
         // b+=a, regular lock_guard causes a deadlock
         std::unique_lock<M> lock1{_mutex, std::defer_lock};
         std::unique_lock<M> lock2{rhs._mutex, std::defer_lock};
-        std::lock(lock1, lock2);
-
+        if (&rhs == this) {
+            // second lock would deadlock when doing a+=a
+            lock1.lock();
+        } else {
+            std::lock(lock1, lock2);
+        }
         _state += rhs._state;
         return *this;
     }
