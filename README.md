@@ -22,3 +22,6 @@ C++ Metrics is inspired by Coda Hale's Metrics library, but has fewer features.
 ## Algorithms
 - Reservoir sampling: [optimal algorithm L](https://en.wikipedia.org/wiki/Reservoir_sampling#Optimal:_Algorithm_L)
 - Variance: [Welford's online algorithm](https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm)
+
+## See also
+- [John D. Cook - Computing skewness and kurtosis in one pass](https://www.johndcook.com/blog/skewness_kurtosis/) - online calculation of mean/variance/skew/kurtosis in C++ - inspired me to also implement += and + on statistics
