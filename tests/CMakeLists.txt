@@ -40,5 +40,14 @@ target_link_options(UnitTests
     -fsanitize=address
 )
 
+add_executable(TestDeadlock
+    ./TestDeadlock.cpp
+)
+target_link_libraries(TestDeadlock
+    Metrics
+    gtest_main
+)
+
 include(GoogleTest)
 gtest_discover_tests(UnitTests)
+gtest_discover_tests(TestDeadlock)

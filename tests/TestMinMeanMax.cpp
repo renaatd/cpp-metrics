@@ -77,6 +77,10 @@ TEST(TestMinMeanMax, operator_compound_plus) {
     EXPECT_EQ(-4, dut1.mean());
     EXPECT_EQ(-1, dut1.max());
     EXPECT_EQ(4, dut1.count());
+
+    // should not deadlock
+    dut1 += dut1;
+    EXPECT_EQ(8, dut1.count());
 }
 
 TEST(TestMinMeanMax, operator_plus) {
