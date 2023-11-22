@@ -1,5 +1,6 @@
 // Tests trying to cause a deadlock (e.g. bad locking order)
 
+#include "Metrics/Kurtosis.hpp"
 #include "Metrics/MinMeanMax.hpp"
 #include "Metrics/Variance.hpp"
 #include "gtest/gtest.h"
@@ -51,6 +52,17 @@ TEST(TestDeadlock, varianceAssign) {
     std::cout << "Starting thread" << std::endl;
     std::thread t1(assign<Metrics::Variance<>>, std::ref(dut1), std::ref(dut2));
     std::thread t2(assign<Metrics::Variance<>>, std::ref(dut2), std::ref(dut1));
+
+    std::cout << "Joining threads" << std::endl;
+    t1.join();
+    t2.join();
+}
+
+TEST(TestDeadlock, kurtosisAssign) {
+    Metrics::Kurtosis<> dut1, dut2;
+    std::cout << "Starting thread" << std::endl;
+    std::thread t1(assign<Metrics::Kurtosis<>>, std::ref(dut1), std::ref(dut2));
+    std::thread t2(assign<Metrics::Kurtosis<>>, std::ref(dut2), std::ref(dut1));
 
     std::cout << "Joining threads" << std::endl;
     t1.join();

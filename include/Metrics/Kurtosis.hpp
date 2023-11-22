@@ -113,8 +113,11 @@ class Kurtosis : public IMetric {
         if (this == &other) {
             return *this;
         }
-        lock_guard lock(_mutex);
-        lock_guard lock_other(other._mutex);
+        // In the very unlikely case that 2 threads simultaneously do a=b and
+        // b=a, regular lock_guard causes a deadlock
+        std::unique_lock<M> lock1{_mutex, std::defer_lock};
+        std::unique_lock<M> lock2{other._mutex, std::defer_lock};
+        std::lock(lock1, lock2);
         _state = other._state;
         return *this;
     }
