@@ -6,10 +6,10 @@ C++ Metrics is a header-only library to measure parameter distributions in an em
 C++ Metrics is inspired by Coda Hale's Metrics library, but has fewer features. 
 
 ## Features
-- measurement types: gauge, statistics (min/mean/max/variance/stdev), histogram
+- measurement types: gauge, statistics (min/mean/max/variance/stdev/skew/kurtosis), linear regression, histogram
 - histogram can use sliding window reservoir or sampling reservoir
 - low overhead: typically < 10 ns / measurement
-- updating is thread-safe by default using mutexes, mutexes can be disabled at compile time
+- updating is made thread-safe by using mutexes, mutexes can be disabled at compile time
 - optional registry for reporting all metrics at once
 - no build system needed, just copy the header files in a project
 - no background threads
@@ -22,6 +22,7 @@ C++ Metrics is inspired by Coda Hale's Metrics library, but has fewer features.
 ## Algorithms
 - Reservoir sampling: [optimal algorithm L](https://en.wikipedia.org/wiki/Reservoir_sampling#Optimal:_Algorithm_L)
 - Variance: [Welford's online algorithm](https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm)
+- Linear regression using LSQ: [Simple linear regression](https://en.wikipedia.org/wiki/Simple_linear_regression)
 
 ## See also
 - [John D. Cook - Computing skewness and kurtosis in one pass](https://www.johndcook.com/blog/skewness_kurtosis/) - online calculation of mean/variance/skew/kurtosis in C++ - inspired me to also implement += and + on statistics

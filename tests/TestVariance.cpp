@@ -12,6 +12,7 @@ TEST(TestVariance, singleValue) {
     EXPECT_EQ(-1, dut.min());
     EXPECT_EQ(-1, dut.mean());
     EXPECT_EQ(-1, dut.max());
+    EXPECT_EQ(0, dut.m2());
 }
 
 TEST(TestVariance, threeValues) {
@@ -24,6 +25,7 @@ TEST(TestVariance, threeValues) {
     EXPECT_EQ(2, dut.mean());
     EXPECT_EQ(3, dut.max());
     EXPECT_EQ(3, dut.count());
+    EXPECT_EQ(2, dut.m2());
 }
 
 TEST(TestVariance, threeValuesCompoundPlus) {
@@ -40,6 +42,7 @@ TEST(TestVariance, threeValuesCompoundPlus) {
     EXPECT_EQ(2, dut1.mean());
     EXPECT_EQ(3, dut1.max());
     EXPECT_EQ(3, dut1.count());
+    EXPECT_EQ(2, dut1.m2());
     EXPECT_EQ(0, dut2.count());
 
     // add non-empty DUT to empty DUT
@@ -49,6 +52,7 @@ TEST(TestVariance, threeValuesCompoundPlus) {
     EXPECT_EQ(2, dut2.mean());
     EXPECT_EQ(3, dut2.max());
     EXPECT_EQ(3, dut2.count());
+    EXPECT_EQ(2, dut2.m2());
     EXPECT_EQ(3, dut1.count());
 
     // add non-empty DUT to non-empty DUT
@@ -64,6 +68,7 @@ TEST(TestVariance, threeValuesCompoundPlus) {
     EXPECT_EQ(2, dut1.mean());
     EXPECT_EQ(3, dut1.max());
     EXPECT_EQ(3, dut1.count());
+    EXPECT_EQ(2, dut1.m2());
     EXPECT_EQ(2, dut2.count());
 
     // should not deadlock
@@ -78,6 +83,7 @@ TEST(TestVariance, variance) {
     EXPECT_TRUE(std::isnan(dut.stddev()));
     EXPECT_TRUE(std::isnan(dut.sample_variance()));
     EXPECT_TRUE(std::isnan(dut.sample_stddev()));
+    EXPECT_EQ(0, dut.m2());
 
     dut.update(10);
     EXPECT_DOUBLE_EQ(0.0, dut.variance());

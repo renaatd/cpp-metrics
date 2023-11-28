@@ -45,15 +45,22 @@ template <typename T = double> class VarianceNoLock {
         return *this;
     }
 
+    /** return no of measurements */
     int64_t count() const { return _minmax.count(); }
 
+    /** return lowest measured value or NAN when there are no measurements */
     T min() const { return _minmax.min(); }
 
+    /** return mean of measured values or NAN when there are no measurements */
     T mean() const { return (_minmax.count() == 0) ? NAN : _mean; }
 
+    /** return highest measured value or NAN when there are no measurements */
     T max() const { return _minmax.max(); }
 
-    /** variance of a population */
+    /** second order moment: sum of (x-x_avg)^2 */
+    T m2() const { return _m2; }
+
+    /** return variance of a population or NAN when there are no measurements */
     T variance() const {
         return (_minmax.count() < 1) ? NAN : (_m2 / _minmax.count());
     }
@@ -147,27 +154,37 @@ class Variance : public IMetric {
         return result;
     }
 
+    /** return no of measurements */
     int64_t count() const {
         lock_guard lock(_mutex);
         return _state.count();
     }
 
+    /** return lowest measured value or NAN when there are no measurements */
     T min() const {
         lock_guard lock(_mutex);
         return _state.min();
     }
 
+    /** return mean of measured values or NAN when there are no measurements */
     T mean() const {
         lock_guard lock(_mutex);
         return _state.mean();
     }
 
+    /** return highest measured value or NAN when there are no measurements */
     T max() const {
         lock_guard lock(_mutex);
         return _state.max();
     }
 
-    /** variance of a population */
+    /** second order moment: sum of (x-x_avg)^2 */
+    T m2() const {
+        lock_guard lock(_mutex);
+        return _state.m2();
+    }
+
+    /** return variance of a population or NAN when there are no measurements */
     T variance() const {
         lock_guard lock(_mutex);
         return _state.variance();

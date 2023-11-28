@@ -36,15 +36,19 @@ template <typename T = double> class MinMeanMaxNoLock {
         return result;
     }
 
+    /** return no of measurements */
     int64_t count() const { return _minmax.count(); }
 
+    /** return lowest measured value or NAN when there are no measurements */
     T min() const { return _minmax.min(); }
 
+    /** return mean of measured values or NAN when there are no measurements */
     T mean() const {
         auto current_count = _minmax.count();
         return (current_count == 0) ? NAN : _sum / current_count;
     }
 
+    /** return highest measured value or NAN when there are no measurements */
     T max() const { return _minmax.max(); }
 
     std::string toString(int precision = -1) const {
@@ -123,21 +127,25 @@ class MinMeanMax : public IMetric {
         return result;
     }
 
+    /** return no of measurements */
     int64_t count() const {
         lock_guard lock(_mutex);
         return _state.count();
     }
 
+    /** return lowest measured value or NAN when there are no measurements */
     T min() const {
         lock_guard lock(_mutex);
         return _state.min();
     }
 
+    /** return mean of measured values or NAN when there are no measurements */
     T mean() const {
         lock_guard lock(_mutex);
         return _state.mean();
     }
 
+    /** return highest measured value or NAN when there are no measurements */
     T max() const {
         lock_guard lock(_mutex);
         return _state.max();
