@@ -1,6 +1,7 @@
 #include "Metrics/Gauge.hpp"
 #include "Metrics/Histogram.hpp"
 #include "Metrics/Kurtosis.hpp"
+#include "Metrics/LinearRegression.hpp"
 #include "Metrics/MinMax.hpp"
 #include "Metrics/MinMeanMax.hpp"
 #include "Metrics/Registry.hpp"
@@ -37,6 +38,11 @@ int main() {
     {
         Metrics::Kurtosis<double, DummyMutex> dut;
         std::cout << "sizeof Kurtosis<double,DummyMutex>: " << sizeof dut
+                  << std::endl;
+    }
+    {
+        Metrics::LinearRegression<double, DummyMutex> dut;
+        std::cout << "sizeof LinearRegression<double,DummyMutex>: " << sizeof dut
                   << std::endl;
     }
     {

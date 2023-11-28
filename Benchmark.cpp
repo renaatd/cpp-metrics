@@ -1,6 +1,7 @@
 #include "Metrics/Gauge.hpp"
 #include "Metrics/Histogram.hpp"
 #include "Metrics/Kurtosis.hpp"
+#include "Metrics/LinearRegression.hpp"
 #include "Metrics/MinMax.hpp"
 #include "Metrics/MinMeanMax.hpp"
 #include "Metrics/Registry.hpp"
@@ -85,6 +86,19 @@ int main() {
         double ns_per_loop =
             static_cast<double>(s.ElapsedUs()) * 1000.0 / LOOPS_UPDATE;
         std::cout << "Stats: " << stats.toString(1) << std::endl;
+        printf("time per loop: %.1lf ns\n\n", ns_per_loop);
+    }
+
+    {
+        std::cout << "LinearRegression<double,DummyMutex>()" << std::endl;
+        Metrics::LinearRegression<double, DummyMutex> stats;
+        Elapsed s;
+        for (int i = 0; i < LOOPS_UPDATE; i++) {
+            stats.update(i, 10 + 2 * i);
+        }
+        double ns_per_loop =
+            static_cast<double>(s.ElapsedUs()) * 1000.0 / LOOPS_UPDATE;
+        std::cout << "LinearRegression: " << stats.toString(1) << std::endl;
         printf("time per loop: %.1lf ns\n\n", ns_per_loop);
     }
 
