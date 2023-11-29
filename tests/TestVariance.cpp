@@ -8,9 +8,12 @@ TEST(TestVariance, singleValue) {
     Metrics::Variance<> dut;
 
     EXPECT_TRUE(std::isnan(dut.mean()));
+    EXPECT_EQ(0, dut.mean0());
+
     dut.update(-1);
     EXPECT_EQ(-1, dut.min());
     EXPECT_EQ(-1, dut.mean());
+    EXPECT_EQ(-1, dut.mean0());
     EXPECT_EQ(-1, dut.max());
     EXPECT_EQ(0, dut.m2());
 }
@@ -147,11 +150,13 @@ TEST(TestVariance, reset) {
     dut.reset();
     EXPECT_TRUE(std::isnan(dut.min()));
     EXPECT_TRUE(std::isnan(dut.mean()));
+    EXPECT_EQ(0, dut.mean0());
     EXPECT_TRUE(std::isnan(dut.max()));
     EXPECT_EQ(0, dut.count());
     dut.update(2);
     EXPECT_EQ(2, dut.min());
     EXPECT_EQ(2, dut.mean());
+    EXPECT_EQ(2, dut.mean0());
     EXPECT_EQ(2, dut.max());
     EXPECT_EQ(1, dut.count());
 }

@@ -1,8 +1,6 @@
 #ifndef METRICS_LINEARREGRESSION_HPP
 #define METRICS_LINEARREGRESSION_HPP
 
-// https://en.wikipedia.org/wiki/Simple_linear_regression
-
 #include "IMetric.hpp"
 #include "Variance.hpp"
 #include <algorithm>
@@ -14,7 +12,8 @@
 
 namespace Metrics {
 namespace Internals {
-/** Calculate linear regression coefficients using least squares incrementally
+/** Calculate incrementally linear regression coefficients using least squares
+ * https://en.wikipedia.org/wiki/Simple_linear_regression
  */
 template <typename T = double> class LinearRegressionNoLock {
   public:
@@ -26,16 +25,11 @@ template <typename T = double> class LinearRegressionNoLock {
 
     void update(T x, T y) {
         // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Covariance
-        T dx = x - _stats_x.mean();
+        T dx = x - _stats_x.mean0();
         _stats_x.update(x);
         _stats_y.update(y);
-        T dy = y - _stats_y.mean();
-
-        if (_stats_x.count() > 1) {
-            // at the first call mean() is NAN and _s_xy is 0 for the first two
-            // points anyway
-            _s_xy += dx * dy;
-        }
+        T dy = y - _stats_y.mean0();
+        _s_xy += dx * dy;
     }
 
     LinearRegressionNoLock &operator+=(const LinearRegressionNoLock &rhs) {
@@ -44,20 +38,17 @@ template <typename T = double> class LinearRegressionNoLock {
             return *this;
         }
 
-        // stas.mean() is NAN when there is no data -> special case for these
-        if (count() == 0) {
-            _s_xy = rhs._s_xy;
-        } else if (rhs.count() != 0) {
-            _s_xy += rhs._s_xy + (_stats_x.mean() - rhs._stats_x.mean()) *
-                                     (_stats_y.mean() - rhs._stats_y.mean()) *
-                                     count() * rhs.count() / count_both;
-        }
+        // Note: stats.mean() is 0 when there is no data, OK
+        _s_xy += rhs._s_xy + (_stats_x.mean0() - rhs._stats_x.mean0()) *
+                                 (_stats_y.mean0() - rhs._stats_y.mean0()) *
+                                 count() * rhs.count() / count_both;
 
         _stats_x += rhs._stats_x;
         _stats_y += rhs._stats_y;
         return *this;
     }
 
+    /** return no of measurements */
     int64_t count() const { return _stats_x.count(); }
 
     const VarianceNoLock<T> &stats_x() const { return _stats_x; }
@@ -66,8 +57,9 @@ template <typename T = double> class LinearRegressionNoLock {
     /** slope of least squares best fit, y = slope() * x + intercept(), or NAN
      * when less than 2 measurements */
     double slope() const {
-        if (_stats_x.count() < 2)
+        if (_stats_x.count() < 2) {
             return NAN;
+        }
 
         T s_xx = _stats_x.m2();
         return _s_xy / s_xx;
@@ -84,8 +76,10 @@ template <typename T = double> class LinearRegressionNoLock {
     /** slope of least squares best fit trough (x,y), or NAN when less than 2
      * measurements */
     double slope_through(T x, T y) const {
-        if (_stats_x.count() < 1)
+        if (_stats_x.count() < 1) {
             return NAN;
+        }
+
         T s_xx = _stats_x.m2();
         T x_shift = _stats_x.mean() - x;
         T y_shift = _stats_y.mean() - y;
@@ -114,7 +108,8 @@ template <typename T = double> class LinearRegressionNoLock {
 
 } // namespace Internals
 
-/** Calculate linear regression coefficients using least squares incrementally
+/** Calculate incrementally linear regression coefficients using least squares
+ * https://en.wikipedia.org/wiki/Simple_linear_regression
  */
 template <typename T = double, typename M = std::mutex>
 class LinearRegression : public IMetric {
@@ -176,6 +171,7 @@ class LinearRegression : public IMetric {
         return result;
     }
 
+    /** return no of measurements */
     int64_t count() const {
         lock_guard lock(_mutex);
         return _state.count();

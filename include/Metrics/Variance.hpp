@@ -54,6 +54,9 @@ template <typename T = double> class VarianceNoLock {
     /** return mean of measured values or NAN when there are no measurements */
     T mean() const { return (_minmax.count() == 0) ? NAN : _mean; }
 
+    /** return mean of measured values or 0 when there are no measurements */
+    T mean0() const { return _mean; }
+
     /** return highest measured value or NAN when there are no measurements */
     T max() const { return _minmax.max(); }
 
@@ -170,6 +173,12 @@ class Variance : public IMetric {
     T mean() const {
         lock_guard lock(_mutex);
         return _state.mean();
+    }
+
+    /** return mean of measured values or 0 when there are no measurements */
+    T mean0() const {
+        lock_guard lock(_mutex);
+        return _state.mean0();
     }
 
     /** return highest measured value or NAN when there are no measurements */
