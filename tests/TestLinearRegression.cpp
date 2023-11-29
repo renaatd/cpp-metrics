@@ -77,6 +77,16 @@ TEST(TestLinearRegression, addVaryingLength) {
     }
 }
 
+TEST(TestLinearRegression, addToSelf) {
+    Metrics::LinearRegression<> dut;
+    dut.update(2.0, 5.0);
+
+    // should not deadlock
+    dut += dut;
+
+    EXPECT_EQ(2, dut.count());
+}
+
 TEST(TestLinearRegression, slopeHighOffset) {
     constexpr double offset = 1e9;
     Metrics::LinearRegression<> dut;
