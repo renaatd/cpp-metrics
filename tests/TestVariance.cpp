@@ -170,4 +170,41 @@ TEST(TestVariance, toString) {
     dut.update(3);
     EXPECT_EQ(0, dut.toString(1).find("count(3) min(1.0) mean(2.0) max(3.0)"));
 }
+
+TEST(TestVariance, constructors) {
+    Metrics::Variance<> dut1;
+    dut1.update(1);
+
+    Metrics::Variance<> dut2(dut1);
+    EXPECT_EQ(1, dut1.count());
+    EXPECT_EQ(1, dut2.count());
+}
+
+TEST(TestVariance, assignments) {
+    Metrics::Variance<> dut1;
+    dut1.update(1);
+    dut1.update(3);
+
+    Metrics::Variance<> dut2;
+    dut2 = dut1;
+    EXPECT_EQ(2, dut1.mean());
+    EXPECT_EQ(2, dut2.mean());
+
+    dut2 = dut2;
+    EXPECT_EQ(2, dut2.mean());
+}
+
+TEST(TestVariance, addEmpty) {
+    Metrics::Variance<> dut1;
+    Metrics::Variance<> dut2;
+
+    // add empty DUT to empty DUT
+    dut1 += dut2;
+
+    EXPECT_EQ(0, dut1.count());
+    EXPECT_EQ(0, dut2.count());
+
+    dut1.update(1);
+    EXPECT_EQ(1, dut1.mean());
+}
 } // namespace

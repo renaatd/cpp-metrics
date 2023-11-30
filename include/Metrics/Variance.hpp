@@ -60,7 +60,7 @@ template <typename T = double> class VarianceNoLock {
     /** return highest measured value or NAN when there are no measurements */
     T max() const { return _minmax.max(); }
 
-    /** second order moment: sum of (x-x_avg)^2 */
+    /** second order moment: sum of (x-x_mean)^2 */
     T m2() const { return _m2; }
 
     /** return variance of a population or NAN when there are no measurements */
@@ -187,7 +187,7 @@ class Variance : public IMetric {
         return _state.max();
     }
 
-    /** second order moment: sum of (x-x_avg)^2 */
+    /** second order moment: sum of (x-x_mean)^2 */
     T m2() const {
         lock_guard lock(_mutex);
         return _state.m2();

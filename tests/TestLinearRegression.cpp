@@ -33,6 +33,7 @@ TEST(TestLinearRegression, twoValues) {
     EXPECT_EQ(2, dut.count());
     EXPECT_DOUBLE_EQ(-5.0, dut.slope());
     EXPECT_DOUBLE_EQ(15.0, dut.intercept());
+    EXPECT_DOUBLE_EQ(-1.0, dut.correlation());
 }
 
 TEST(TestLinearRegression, accessStats) {
@@ -73,7 +74,7 @@ TEST(TestLinearRegression, addVaryingLength) {
         EXPECT_EQ(height.size(), dut1.count());
         EXPECT_NEAR(61.27219, dut1.slope(), 1e-5);
         EXPECT_NEAR(-39.06195, dut1.intercept(), 1e-5);
-        // EXPECT_DOUBLE_EQ(0.9946, dut1.correlation());
+        EXPECT_NEAR(0.99458, dut1.correlation(), 1e-5);
     }
 }
 

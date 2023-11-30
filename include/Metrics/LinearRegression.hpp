@@ -56,7 +56,7 @@ template <typename T = double> class LinearRegressionNoLock {
 
     /** slope of least squares best fit, y = slope() * x + intercept(), or NAN
      * when less than 2 measurements */
-    double slope() const {
+    T slope() const {
         if (_stats_x.count() < 2) {
             return NAN;
         }
@@ -67,15 +67,23 @@ template <typename T = double> class LinearRegressionNoLock {
 
     /** intercept of least squares best fit, y = slope() * x + intercept(), or
      * NAN when less than 2 measurements */
-    double intercept() const {
+    T intercept() const {
         return (_stats_x.count() < 2)
                    ? NAN
                    : (_stats_y.mean() - slope() * _stats_x.mean());
     }
 
+    /** correlation of x and y, or NAN when less than 2 measurements */
+    T correlation() const {
+        return (_stats_x.count() < 2)
+                   ? NAN
+                   : _s_xy / (_stats_x.count() * _stats_x.stddev() *
+                              _stats_y.stddev());
+    }
+
     /** slope of least squares best fit trough (x,y), or NAN when less than 2
      * measurements */
-    double slope_through(T x, T y) const {
+    T slope_through(T x, T y) const {
         if (_stats_x.count() < 1) {
             return NAN;
         }
@@ -88,7 +96,7 @@ template <typename T = double> class LinearRegressionNoLock {
 
     /** slope of least squares best fit trough origin, or NAN when less than 2
      * measurements */
-    double slope_through_origin() const { return slope_through(0.0, 0.0); }
+    T slope_through_origin() const { return slope_through(0.0, 0.0); }
 
     std::string toString(int precision = -1) const {
         std::ostringstream os;
@@ -189,27 +197,33 @@ class LinearRegression : public IMetric {
 
     // slope of least squares best fit, y = slope() * x + intercept(), or NAN
     // when less than 2 measurements
-    double slope() const {
+    T slope() const {
         lock_guard lock(_mutex);
         return _state.slope();
     }
 
     // intercept of least squares best fit, y = slope() * x + intercept(), or
     // NAN when less than 2 measurements
-    double intercept() const {
+    T intercept() const {
         lock_guard lock(_mutex);
         return _state.intercept();
     }
 
+    /** correlation of x and y, or NAN when less than 2 measurements */
+    T correlation() const {
+        lock_guard lock(_mutex);
+        return _state.correlation();
+    }
+
     // slope of least squares best fit trough (x,y), or NAN when no measurements
-    double slope_through(T x, T y) const {
+    T slope_through(T x, T y) const {
         lock_guard lock(_mutex);
         return _state.slope_through(x, y);
     }
 
     // slope of least squares best fit trough origin, or NAN when no
     // measurements
-    double slope_through_origin() const {
+    T slope_through_origin() const {
         lock_guard lock(_mutex);
         return _state.slope_through_origin();
     }
