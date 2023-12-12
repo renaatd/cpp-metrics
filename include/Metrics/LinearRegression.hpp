@@ -17,13 +17,13 @@ namespace Internals {
  */
 template <typename T = double> class LinearRegressionNoLock {
   public:
-    void reset() {
+    void reset() noexcept {
         _stats_x = {};
         _stats_y = {};
         _s_xy = {};
     }
 
-    void update(T x, T y) {
+    void update(T x, T y) noexcept {
         // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Covariance
         T dx = x - _stats_x.mean0();
         _stats_x.update(x);
@@ -32,7 +32,8 @@ template <typename T = double> class LinearRegressionNoLock {
         _s_xy += dx * dy;
     }
 
-    LinearRegressionNoLock &operator+=(const LinearRegressionNoLock &rhs) {
+    LinearRegressionNoLock &
+    operator+=(const LinearRegressionNoLock &rhs) noexcept {
         const auto count_both = count() + rhs.count();
         if (count_both == 0) {
             return *this;
@@ -49,14 +50,14 @@ template <typename T = double> class LinearRegressionNoLock {
     }
 
     /** return no of measurements */
-    int64_t count() const { return _stats_x.count(); }
+    int64_t count() const noexcept { return _stats_x.count(); }
 
-    const VarianceNoLock<T> &stats_x() const { return _stats_x; }
-    const VarianceNoLock<T> &stats_y() const { return _stats_y; }
+    const VarianceNoLock<T> &stats_x() const noexcept { return _stats_x; }
+    const VarianceNoLock<T> &stats_y() const noexcept { return _stats_y; }
 
     /** slope of least squares best fit, y = slope() * x + intercept(), or NAN
      * when less than 2 measurements */
-    T slope() const {
+    T slope() const noexcept {
         if (_stats_x.count() < 2) {
             return NAN;
         }
@@ -67,14 +68,14 @@ template <typename T = double> class LinearRegressionNoLock {
 
     /** intercept of least squares best fit, y = slope() * x + intercept(), or
      * NAN when less than 2 measurements */
-    T intercept() const {
+    T intercept() const noexcept {
         return (_stats_x.count() < 2)
                    ? NAN
                    : (_stats_y.mean() - slope() * _stats_x.mean());
     }
 
     /** correlation of x and y, or NAN when less than 2 measurements */
-    T correlation() const {
+    T correlation() const noexcept {
         return (_stats_x.count() < 2)
                    ? NAN
                    : _s_xy / (_stats_x.count() * _stats_x.stddev() *
@@ -83,7 +84,7 @@ template <typename T = double> class LinearRegressionNoLock {
 
     /** slope of least squares best fit trough (x,y), or NAN when less than 2
      * measurements */
-    T slope_through(T x, T y) const {
+    T slope_through(T x, T y) const noexcept {
         if (_stats_x.count() < 1) {
             return NAN;
         }
@@ -96,9 +97,9 @@ template <typename T = double> class LinearRegressionNoLock {
 
     /** slope of least squares best fit trough origin, or NAN when less than 2
      * measurements */
-    T slope_through_origin() const { return slope_through(0.0, 0.0); }
+    T slope_through_origin() const noexcept { return slope_through(0.0, 0.0); }
 
-    std::string toString(int precision = -1) const {
+    std::string toString(int precision = -1) const noexcept {
         std::ostringstream os;
         if (precision > -1) {
             os << std::fixed << std::setprecision(precision);
@@ -127,13 +128,13 @@ class LinearRegression : public IMetric {
     LinearRegression() = default;
     ~LinearRegression() override = default;
 
-    LinearRegression(const LinearRegression &other) {
+    LinearRegression(const LinearRegression &other) noexcept {
         // copy constructor
         lock_guard lock_other(other._mutex);
         _state = other._state;
     }
 
-    LinearRegression &operator=(const LinearRegression &other) {
+    LinearRegression &operator=(const LinearRegression &other) noexcept {
         // copy assignment
         if (this == &other) {
             return *this;
@@ -147,17 +148,17 @@ class LinearRegression : public IMetric {
         return *this;
     }
 
-    void reset() override {
+    void reset() noexcept override {
         lock_guard lock(_mutex);
         _state.reset();
     }
 
-    void update(T x, T y) {
+    void update(T x, T y) noexcept {
         lock_guard lock(_mutex);
         _state.update(x, y);
     }
 
-    LinearRegression &operator+=(const LinearRegression &rhs) {
+    LinearRegression &operator+=(const LinearRegression &rhs) noexcept {
         // In the very unlikely case that 2 threads simultaneously do a+=b and
         // b+=a, regular lock_guard causes a deadlock
         std::unique_lock<M> lock1{_mutex, std::defer_lock};
@@ -172,63 +173,64 @@ class LinearRegression : public IMetric {
         return *this;
     }
 
-    friend inline LinearRegression operator+(const LinearRegression &lhs,
-                                             const LinearRegression &rhs) {
+    friend inline LinearRegression
+    operator+(const LinearRegression &lhs,
+              const LinearRegression &rhs) noexcept {
         LinearRegression result = lhs;
         result += rhs;
         return result;
     }
 
     /** return no of measurements */
-    int64_t count() const {
+    int64_t count() const noexcept {
         lock_guard lock(_mutex);
         return _state.count();
     }
 
-    const Internals::VarianceNoLock<T> &stats_x() const {
+    const Internals::VarianceNoLock<T> &stats_x() const noexcept {
         lock_guard lock(_mutex);
         return _state.stats_x();
     }
 
-    const Internals::VarianceNoLock<T> &stats_y() const {
+    const Internals::VarianceNoLock<T> &stats_y() const noexcept {
         lock_guard lock(_mutex);
         return _state.stats_y();
     }
 
     // slope of least squares best fit, y = slope() * x + intercept(), or NAN
     // when less than 2 measurements
-    T slope() const {
+    T slope() const noexcept {
         lock_guard lock(_mutex);
         return _state.slope();
     }
 
     // intercept of least squares best fit, y = slope() * x + intercept(), or
     // NAN when less than 2 measurements
-    T intercept() const {
+    T intercept() const noexcept {
         lock_guard lock(_mutex);
         return _state.intercept();
     }
 
     /** correlation of x and y, or NAN when less than 2 measurements */
-    T correlation() const {
+    T correlation() const noexcept {
         lock_guard lock(_mutex);
         return _state.correlation();
     }
 
     // slope of least squares best fit trough (x,y), or NAN when no measurements
-    T slope_through(T x, T y) const {
+    T slope_through(T x, T y) const noexcept {
         lock_guard lock(_mutex);
         return _state.slope_through(x, y);
     }
 
     // slope of least squares best fit trough origin, or NAN when no
     // measurements
-    T slope_through_origin() const {
+    T slope_through_origin() const noexcept {
         lock_guard lock(_mutex);
         return _state.slope_through_origin();
     }
 
-    std::string toString(int precision = -1) const override {
+    std::string toString(int precision = -1) const noexcept override {
         lock_guard lock(_mutex);
         return _state.toString(precision);
     }

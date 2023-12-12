@@ -13,45 +13,46 @@ namespace Metrics {
 namespace Internals {
 template <typename T = double> class MinMeanMaxNoLock {
   public:
-    void reset() {
+    void reset() noexcept {
         _minmax.reset();
         _sum = {};
     }
 
-    void update(T value) {
+    void update(T value) noexcept {
         _minmax.update(value);
         _sum += value;
     }
 
-    MinMeanMaxNoLock &operator+=(const MinMeanMaxNoLock &rhs) {
+    MinMeanMaxNoLock &operator+=(const MinMeanMaxNoLock &rhs) noexcept {
         _minmax += rhs._minmax;
         _sum += rhs._sum;
         return *this;
     }
 
-    friend inline MinMeanMaxNoLock operator+(const MinMeanMaxNoLock &lhs,
-                                             const MinMeanMaxNoLock &rhs) {
+    friend inline MinMeanMaxNoLock
+    operator+(const MinMeanMaxNoLock &lhs,
+              const MinMeanMaxNoLock &rhs) noexcept {
         MinMeanMaxNoLock result = lhs;
         result += rhs;
         return result;
     }
 
     /** return no of measurements */
-    int64_t count() const { return _minmax.count(); }
+    int64_t count() const noexcept { return _minmax.count(); }
 
     /** return lowest measured value or NAN when there are no measurements */
-    T min() const { return _minmax.min(); }
+    T min() const noexcept { return _minmax.min(); }
 
     /** return mean of measured values or NAN when there are no measurements */
-    T mean() const {
+    T mean() const noexcept {
         auto current_count = _minmax.count();
         return (current_count == 0) ? NAN : _sum / current_count;
     }
 
     /** return highest measured value or NAN when there are no measurements */
-    T max() const { return _minmax.max(); }
+    T max() const noexcept { return _minmax.max(); }
 
-    std::string toString(int precision = -1) const {
+    std::string toString(int precision = -1) const noexcept {
         std::ostringstream os;
         if (precision > -1) {
             os << std::fixed << std::setprecision(precision);
@@ -75,13 +76,13 @@ class MinMeanMax : public IMetric {
     MinMeanMax() = default;
     ~MinMeanMax() override = default;
 
-    MinMeanMax(const MinMeanMax &other) {
+    MinMeanMax(const MinMeanMax &other) noexcept {
         // copy constructor
         lock_guard lock_other(other._mutex);
         _state = other._state;
     }
 
-    MinMeanMax &operator=(const MinMeanMax &other) {
+    MinMeanMax &operator=(const MinMeanMax &other) noexcept {
         // copy assignment
         if (this == &other) {
             return *this;
@@ -95,17 +96,17 @@ class MinMeanMax : public IMetric {
         return *this;
     }
 
-    void reset() override {
+    void reset() noexcept override {
         lock_guard lock(_mutex);
         _state.reset();
     }
 
-    void update(T value) {
+    void update(T value) noexcept {
         lock_guard lock(_mutex);
         _state.update(value);
     }
 
-    MinMeanMax &operator+=(const MinMeanMax &rhs) {
+    MinMeanMax &operator+=(const MinMeanMax &rhs) noexcept {
         // In the very unlikely case that 2 threads simultaneously do a+=b and
         // b+=a, regular lock_guard causes a deadlock
         std::unique_lock<M> lock1{_mutex, std::defer_lock};
@@ -121,37 +122,37 @@ class MinMeanMax : public IMetric {
     }
 
     friend inline MinMeanMax operator+(const MinMeanMax &lhs,
-                                       const MinMeanMax &rhs) {
+                                       const MinMeanMax &rhs) noexcept {
         MinMeanMax result = lhs;
         result += rhs;
         return result;
     }
 
     /** return no of measurements */
-    int64_t count() const {
+    int64_t count() const noexcept {
         lock_guard lock(_mutex);
         return _state.count();
     }
 
     /** return lowest measured value or NAN when there are no measurements */
-    T min() const {
+    T min() const noexcept {
         lock_guard lock(_mutex);
         return _state.min();
     }
 
     /** return mean of measured values or NAN when there are no measurements */
-    T mean() const {
+    T mean() const noexcept {
         lock_guard lock(_mutex);
         return _state.mean();
     }
 
     /** return highest measured value or NAN when there are no measurements */
-    T max() const {
+    T max() const noexcept {
         lock_guard lock(_mutex);
         return _state.max();
     }
 
-    std::string toString(int precision = -1) const override {
+    std::string toString(int precision = -1) const noexcept override {
         lock_guard lock(_mutex);
         return _state.toString(precision);
     }

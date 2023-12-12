@@ -12,14 +12,14 @@ class SlidingWindowReservoir : public IReservoir<T> {
   public:
     explicit SlidingWindowReservoir(unsigned n) : _reservoir(n) {}
 
-    void reset() override {
+    void reset() noexcept override {
         const std::lock_guard<M> lock(_mutex);
         _writePosition = 0;
         _full = false;
     }
 
     /** Update sliding window */
-    void update(T value) override {
+    void update(T value) noexcept override {
         const std::lock_guard<M> lock(_mutex);
         _reservoir[_writePosition] = value;
         _writePosition++;
@@ -31,21 +31,21 @@ class SlidingWindowReservoir : public IReservoir<T> {
         }
     }
 
-    unsigned size() const override { return _reservoir.size(); }
-    unsigned samples() const override {
+    unsigned size() const noexcept override { return _reservoir.size(); }
+    unsigned samples() const noexcept override {
         const std::lock_guard<M> lock(_mutex);
         return samples_nolock();
     }
-    const T *data() const override { return _reservoir.data(); }
+    const T *data() const noexcept override { return _reservoir.data(); }
 
-    Snapshot<T> getSnapshot() const override {
+    Snapshot<T> getSnapshot() const noexcept override {
         const std::lock_guard<M> lock(_mutex);
         return Snapshot<T>(_reservoir.cbegin(),
                            _reservoir.cbegin() + samples_nolock());
     }
 
   private:
-    unsigned samples_nolock() const {
+    unsigned samples_nolock() const noexcept {
         return _full ? _reservoir.size() : _writePosition;
     }
 

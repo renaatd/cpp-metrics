@@ -15,7 +15,7 @@ namespace Internals {
 /** Calculate 4th order statistics online */
 template <typename T = double> class KurtosisNoLock {
   public:
-    void reset() {
+    void reset() noexcept {
         _minmax.reset();
         _mean = {};
         _m2 = {};
@@ -23,7 +23,7 @@ template <typename T = double> class KurtosisNoLock {
         _m4 = {};
     }
 
-    void update(T value) {
+    void update(T value) noexcept {
         auto n1 = _minmax.count();
         _minmax.update(value);
 
@@ -40,39 +40,41 @@ template <typename T = double> class KurtosisNoLock {
         _m2 += term1;
     }
 
-    int64_t count() const { return _minmax.count(); }
+    int64_t count() const noexcept { return _minmax.count(); }
 
-    T min() const { return _minmax.min(); }
+    T min() const noexcept { return _minmax.min(); }
 
-    T mean() const { return (_minmax.count() == 0) ? NAN : _mean; }
+    T mean() const noexcept { return (_minmax.count() == 0) ? NAN : _mean; }
 
-    T max() const { return _minmax.max(); }
+    T max() const noexcept { return _minmax.max(); }
 
     /** variance of a population */
-    T variance() const {
+    T variance() const noexcept {
         return (_minmax.count() < 1) ? NAN : (_m2 / _minmax.count());
     }
 
     /** standard deviation of a population */
-    T stddev() const { return sqrt(variance()); }
+    T stddev() const noexcept { return sqrt(variance()); }
 
     /** variance of a sample from a population */
-    T sample_variance() const {
+    T sample_variance() const noexcept {
         return (_minmax.count() < 2) ? NAN : (_m2 / (_minmax.count() - 1));
     }
 
     /** standard deviation of a sample of a population */
-    T sample_stddev() const { return sqrt(sample_variance()); }
+    T sample_stddev() const noexcept { return sqrt(sample_variance()); }
 
-    T excess_kurtosis() const { return kurtosis() - 3; }
+    T excess_kurtosis() const noexcept { return kurtosis() - 3; }
 
-    T kurtosis() const { return (_minmax.count() * _m4) / (_m2 * _m2); }
+    T kurtosis() const noexcept {
+        return (_minmax.count() * _m4) / (_m2 * _m2);
+    }
 
-    T skew() const {
+    T skew() const noexcept {
         return sqrt(static_cast<T>(_minmax.count())) * _m3 / (pow(_m2, 1.5));
     }
 
-    std::string toString(int precision = -1) const {
+    std::string toString(int precision = -1) const noexcept {
         std::ostringstream os;
         if (precision > -1) {
             os << std::fixed << std::setprecision(precision);
@@ -102,13 +104,13 @@ class Kurtosis : public IMetric {
     Kurtosis() = default;
     ~Kurtosis() override = default;
 
-    Kurtosis(const Kurtosis &other) {
+    Kurtosis(const Kurtosis &other) noexcept {
         // copy constructor
         lock_guard lock_other(other._mutex);
         _state = other._state;
     }
 
-    Kurtosis &operator=(const Kurtosis &other) {
+    Kurtosis &operator=(const Kurtosis &other) noexcept {
         // copy assignment
         if (this == &other) {
             return *this;
@@ -122,76 +124,76 @@ class Kurtosis : public IMetric {
         return *this;
     }
 
-    void reset() override {
+    void reset() noexcept override {
         lock_guard lock(_mutex);
         _state.reset();
     }
 
-    void update(T value) {
+    void update(T value) noexcept {
         lock_guard lock(_mutex);
         _state.update(value);
     }
 
-    int64_t count() const {
+    int64_t count() const noexcept {
         lock_guard lock(_mutex);
         return _state.count();
     }
 
-    T min() const {
+    T min() const noexcept {
         lock_guard lock(_mutex);
         return _state.min();
     }
 
-    T mean() const {
+    T mean() const noexcept {
         lock_guard lock(_mutex);
         return _state.mean();
     }
 
-    T max() const {
+    T max() const noexcept {
         lock_guard lock(_mutex);
         return _state.max();
     }
 
     /** variance of a population */
-    T variance() const {
+    T variance() const noexcept {
         lock_guard lock(_mutex);
         return _state.variance();
     }
 
     /** standard deviation of a population */
-    T stddev() const {
+    T stddev() const noexcept {
         lock_guard lock(_mutex);
         return _state.stddev();
     }
 
     /** variance of a sample from a population */
-    T sample_variance() const {
+    T sample_variance() const noexcept {
         lock_guard lock(_mutex);
         return _state.sample_variance();
     }
 
     /** standard deviation of a sample of a population */
-    T sample_stddev() const {
+    T sample_stddev() const noexcept {
         lock_guard lock(_mutex);
         return _state.sample_stddev();
     }
 
-    T excess_kurtosis() const {
+    T excess_kurtosis() const noexcept {
         lock_guard lock(_mutex);
         return _state.excess_kurtosis();
     }
 
-    T kurtosis() const {
+    T kurtosis() const noexcept {
         lock_guard lock(_mutex);
         return _state.kurtosis();
     }
 
-    T skew() const {
+    T skew() const noexcept {
         lock_guard lock(_mutex);
         return _state.skew();
     }
 
-    std::string toString(int precision = -1) const override {
+    std::string toString(int precision = -1) const noexcept override {
         lock_guard lock(_mutex);
         return _state.toString(precision);
     }

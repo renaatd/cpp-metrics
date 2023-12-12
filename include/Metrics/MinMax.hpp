@@ -13,9 +13,9 @@ namespace Metrics {
 namespace Internals {
 template <typename T = double> class MinMaxNoLock {
   public:
-    void reset() { _count = {}; }
+    void reset() noexcept { _count = {}; }
 
-    void update(T value) {
+    void update(T value) noexcept {
         if (_count == 0) {
             _min = value;
             _max = value;
@@ -27,7 +27,7 @@ template <typename T = double> class MinMaxNoLock {
         _count++;
     }
 
-    MinMaxNoLock &operator+=(const MinMaxNoLock &rhs) {
+    MinMaxNoLock &operator+=(const MinMaxNoLock &rhs) noexcept {
         if (_count == 0 && rhs._count == 0) {
             return *this;
         }
@@ -45,22 +45,22 @@ template <typename T = double> class MinMaxNoLock {
     }
 
     friend inline MinMaxNoLock operator+(const MinMaxNoLock &lhs,
-                                         const MinMaxNoLock &rhs) {
+                                         const MinMaxNoLock &rhs) noexcept {
         MinMaxNoLock result = lhs;
         result += rhs;
         return result;
     }
 
     /** return no of measurements */
-    int64_t count() const { return _count; }
+    int64_t count() const noexcept { return _count; }
 
     /** return lowest measured value or NAN when there are no measurements */
-    T min() const { return (_count == 0) ? NAN : _min; }
+    T min() const noexcept { return (_count == 0) ? NAN : _min; }
 
     /** return highest measured value or NAN when there are no measurements */
-    T max() const { return (_count == 0) ? NAN : _max; }
+    T max() const noexcept { return (_count == 0) ? NAN : _max; }
 
-    std::string toString(int precision = -1) const {
+    std::string toString(int precision = -1) const noexcept {
         std::ostringstream os;
         if (precision > -1) {
             os << std::fixed << std::setprecision(precision);
@@ -86,13 +86,13 @@ class MinMax : public IMetric {
     MinMax() = default;
     ~MinMax() override = default;
 
-    MinMax(const MinMax &other) {
+    MinMax(const MinMax &other) noexcept {
         // copy constructor
         lock_guard lock_other(other._mutex);
         _state = other._state;
     }
 
-    MinMax &operator=(const MinMax &other) {
+    MinMax &operator=(const MinMax &other) noexcept {
         // copy assignment
         if (this == &other) {
             return *this;
@@ -106,17 +106,17 @@ class MinMax : public IMetric {
         return *this;
     }
 
-    void reset() override {
+    void reset() noexcept override {
         lock_guard lock(_mutex);
         _state.reset();
     }
 
-    void update(T value) {
+    void update(T value) noexcept {
         lock_guard lock(_mutex);
         _state.update(value);
     }
 
-    MinMax &operator+=(const MinMax &rhs) {
+    MinMax &operator+=(const MinMax &rhs) noexcept {
         // In the very unlikely case that 2 threads simultaneously do a+=b and
         // b+=a, regular lock_guard causes a deadlock
         std::unique_lock<M> lock1{_mutex, std::defer_lock};
@@ -131,31 +131,32 @@ class MinMax : public IMetric {
         return *this;
     }
 
-    friend inline MinMax operator+(const MinMax &lhs, const MinMax &rhs) {
+    friend inline MinMax operator+(const MinMax &lhs,
+                                   const MinMax &rhs) noexcept {
         MinMax result = lhs;
         result += rhs;
         return result;
     }
 
     /** return no of measurements */
-    int count() const {
+    int count() const noexcept {
         lock_guard lock(_mutex);
         return _state.count();
     }
 
     /** return lowest measured value or NAN when there are no measurements */
-    T min() const {
+    T min() const noexcept {
         lock_guard lock(_mutex);
         return _state.min();
     }
 
     /** return highest measured value or NAN when there are no measurements */
-    T max() const {
+    T max() const noexcept {
         lock_guard lock(_mutex);
         return _state.max();
     }
 
-    std::string toString(int precision = -1) const override {
+    std::string toString(int precision = -1) const noexcept override {
         lock_guard lock(_mutex);
         return _state.toString(precision);
     }

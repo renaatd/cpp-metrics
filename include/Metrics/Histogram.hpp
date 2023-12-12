@@ -20,11 +20,11 @@ template <typename T, typename U = double> class Histogram : public IMetric {
     explicit Histogram(int n, bool withStats = false, int noBins = -1)
         : _reservoir(n), _withStats(withStats), _noBins(noBins) {}
 
-    void reset() override { _reservoir.reset(); }
-    void update(U value) { _reservoir.update(value); }
-    Snapshot<U> getSnapshot() { return _reservoir.getSnapshot(); }
+    void reset() noexcept override { _reservoir.reset(); }
+    void update(U value) noexcept { _reservoir.update(value); }
+    Snapshot<U> getSnapshot() noexcept { return _reservoir.getSnapshot(); }
 
-    std::string toString(int precision = -1) const override {
+    std::string toString(int precision = -1) const noexcept override {
         auto snapshot = _reservoir.getSnapshot();
 
         std::ostringstream os;
@@ -52,7 +52,7 @@ template <typename T, typename U = double> class Histogram : public IMetric {
     }
 
     void dumpBinsToStream(const Snapshot<U> &snapshot, std::ostream &os,
-                          int precision = -1) const {
+                          int precision = -1) const noexcept {
         // get limits of bins
         auto min = snapshot.getValue(0.0);
         auto max = snapshot.getValue(1.0);

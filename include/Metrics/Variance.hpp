@@ -15,13 +15,13 @@ namespace Internals {
 /** Calculate 2nd order statistics incrementally using Welford's algorithm */
 template <typename T = double> class VarianceNoLock {
   public:
-    void reset() {
+    void reset() noexcept {
         _minmax.reset();
         _mean = {};
         _m2 = {};
     }
 
-    void update(T value) {
+    void update(T value) noexcept {
         _minmax.update(value);
 
         // use Welford's algorithm to keep errors low when there is a large
@@ -33,7 +33,7 @@ template <typename T = double> class VarianceNoLock {
         _m2 += delta * delta2;
     }
 
-    VarianceNoLock &operator+=(const VarianceNoLock &rhs) {
+    VarianceNoLock &operator+=(const VarianceNoLock &rhs) noexcept {
         const auto count_both = count() + rhs.count();
         if (count_both == 0) {
             return *this;
@@ -46,40 +46,40 @@ template <typename T = double> class VarianceNoLock {
     }
 
     /** return no of measurements */
-    int64_t count() const { return _minmax.count(); }
+    int64_t count() const noexcept { return _minmax.count(); }
 
     /** return lowest measured value or NAN when there are no measurements */
-    T min() const { return _minmax.min(); }
+    T min() const noexcept { return _minmax.min(); }
 
     /** return mean of measured values or NAN when there are no measurements */
-    T mean() const { return (_minmax.count() == 0) ? NAN : _mean; }
+    T mean() const noexcept { return (_minmax.count() == 0) ? NAN : _mean; }
 
     /** return mean of measured values or 0 when there are no measurements */
-    T mean0() const { return _mean; }
+    T mean0() const noexcept { return _mean; }
 
     /** return highest measured value or NAN when there are no measurements */
-    T max() const { return _minmax.max(); }
+    T max() const noexcept { return _minmax.max(); }
 
     /** second order moment: sum of (x-x_mean)^2 */
-    T m2() const { return _m2; }
+    T m2() const noexcept { return _m2; }
 
     /** return variance of a population or NAN when there are no measurements */
-    T variance() const {
+    T variance() const noexcept {
         return (_minmax.count() < 1) ? NAN : (_m2 / _minmax.count());
     }
 
     /** standard deviation of a population */
-    T stddev() const { return sqrt(variance()); }
+    T stddev() const noexcept { return sqrt(variance()); }
 
     /** variance of a sample from a population */
-    T sample_variance() const {
+    T sample_variance() const noexcept {
         return (_minmax.count() < 2) ? NAN : (_m2 / (_minmax.count() - 1));
     }
 
     /** standard deviation of a sample of a population */
-    T sample_stddev() const { return sqrt(sample_variance()); }
+    T sample_stddev() const noexcept { return sqrt(sample_variance()); }
 
-    std::string toString(int precision = -1) const {
+    std::string toString(int precision = -1) const noexcept {
         std::ostringstream os;
         if (precision > -1) {
             os << std::fixed << std::setprecision(precision);
@@ -106,13 +106,13 @@ class Variance : public IMetric {
     Variance() = default;
     ~Variance() override = default;
 
-    Variance(const Variance &other) {
+    Variance(const Variance &other) noexcept {
         // copy constructor
         lock_guard lock_other(other._mutex);
         _state = other._state;
     }
 
-    Variance &operator=(const Variance &other) {
+    Variance &operator=(const Variance &other) noexcept {
         // copy assignment
         if (this == &other) {
             return *this;
@@ -126,17 +126,17 @@ class Variance : public IMetric {
         return *this;
     }
 
-    void reset() override {
+    void reset() noexcept override {
         lock_guard lock(_mutex);
         _state.reset();
     }
 
-    void update(T value) {
+    void update(T value) noexcept {
         lock_guard lock(_mutex);
         _state.update(value);
     }
 
-    Variance &operator+=(const Variance &rhs) {
+    Variance &operator+=(const Variance &rhs) noexcept {
         // In the very unlikely case that 2 threads simultaneously do a+=b and
         // b+=a, regular lock_guard causes a deadlock
         std::unique_lock<M> lock1{_mutex, std::defer_lock};
@@ -151,73 +151,74 @@ class Variance : public IMetric {
         return *this;
     }
 
-    friend inline Variance operator+(const Variance &lhs, const Variance &rhs) {
+    friend inline Variance operator+(const Variance &lhs,
+                                     const Variance &rhs) noexcept {
         Variance result = lhs;
         result += rhs;
         return result;
     }
 
     /** return no of measurements */
-    int64_t count() const {
+    int64_t count() const noexcept {
         lock_guard lock(_mutex);
         return _state.count();
     }
 
     /** return lowest measured value or NAN when there are no measurements */
-    T min() const {
+    T min() const noexcept {
         lock_guard lock(_mutex);
         return _state.min();
     }
 
     /** return mean of measured values or NAN when there are no measurements */
-    T mean() const {
+    T mean() const noexcept {
         lock_guard lock(_mutex);
         return _state.mean();
     }
 
     /** return mean of measured values or 0 when there are no measurements */
-    T mean0() const {
+    T mean0() const noexcept {
         lock_guard lock(_mutex);
         return _state.mean0();
     }
 
     /** return highest measured value or NAN when there are no measurements */
-    T max() const {
+    T max() const noexcept {
         lock_guard lock(_mutex);
         return _state.max();
     }
 
     /** second order moment: sum of (x-x_mean)^2 */
-    T m2() const {
+    T m2() const noexcept {
         lock_guard lock(_mutex);
         return _state.m2();
     }
 
     /** return variance of a population or NAN when there are no measurements */
-    T variance() const {
+    T variance() const noexcept {
         lock_guard lock(_mutex);
         return _state.variance();
     }
 
     /** standard deviation of a population */
-    T stddev() const {
+    T stddev() const noexcept {
         lock_guard lock(_mutex);
         return _state.stddev();
     }
 
     /** variance of a sample from a population */
-    T sample_variance() const {
+    T sample_variance() const noexcept {
         lock_guard lock(_mutex);
         return _state.sample_variance();
     }
 
     /** standard deviation of a sample of a population */
-    T sample_stddev() const {
+    T sample_stddev() const noexcept {
         lock_guard lock(_mutex);
         return _state.sample_stddev();
     }
 
-    std::string toString(int precision = -1) const override {
+    std::string toString(int precision = -1) const noexcept override {
         lock_guard lock(_mutex);
         return _state.toString(precision);
     }
