@@ -4,15 +4,15 @@
 C++ Metrics is a header-only library to measure parameter distributions in an embedded application. The library is inspired by Coda Hale's Metrics library, but has fewer features. 
 
 ## Metrics
-| Class            | Description                                                          |
-|------------------|----------------------------------------------------------------------|
-| Gauge            | Store a single measurement                                           |
-| MinMax           | Store minimum/maximum measurement                                    |
-| MinMeanMax       | Same as above + mean value                                           |
-| Variance         | Same as above + (sample) variance and (sample) standard deviation    |
-| Kurtosis         | Same as above + skew and kurtosis                                    |
-| LinearRegression | Least squares linear regression - best fit line through measurements |
-| Histogram        | Store n samples in a reservoir, get bins, min/Q25/Q50/Q75/max        |
+| Class            | Description                                                             |
+|------------------|-------------------------------------------------------------------------|
+| Gauge            | Store a single measurement                                              |
+| MinMax           | Store minimum/maximum measurement                                       |
+| MinMeanMax       | Same as above + mean value                                              |
+| Variance         | Same as above + (sample) variance, (sample) standard deviation, and RMS |
+| Kurtosis         | Same as above + skew and kurtosis                                       |
+| LinearRegression | Least squares linear regression - best fit line through measurements    |
+| Histogram        | Store n samples in a reservoir, get bins, min/Q25/Q50/Q75/max           |
 
 ## Reservoirs for histogram
 | Class                  | Description                                                  |

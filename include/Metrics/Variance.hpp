@@ -79,6 +79,13 @@ template <typename T = double> class VarianceNoLock {
     /** standard deviation of a sample of a population */
     T sample_stddev() const noexcept { return sqrt(sample_variance()); }
 
+    /** RMS value of the samples */
+    T rms() const noexcept {
+        return (_minmax.count() < 1)
+                   ? NAN
+                   : sqrt(_mean * _mean + _m2 / _minmax.count());
+    }
+
     std::string toString(int precision = -1) const noexcept {
         std::ostringstream os;
         if (precision > -1) {
@@ -216,6 +223,12 @@ class Variance : public IMetric {
     T sample_stddev() const noexcept {
         lock_guard lock(_mutex);
         return _state.sample_stddev();
+    }
+
+    /** RMS value of the samples */
+    T rms() const noexcept {
+        lock_guard lock(_mutex);
+        return _state.rms();
     }
 
     std::string toString(int precision = -1) const noexcept override {

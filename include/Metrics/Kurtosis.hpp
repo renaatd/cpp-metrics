@@ -74,6 +74,13 @@ template <typename T = double> class KurtosisNoLock {
         return sqrt(static_cast<T>(_minmax.count())) * _m3 / (pow(_m2, 1.5));
     }
 
+    /** RMS value of the samples */
+    T rms() const noexcept {
+        return (_minmax.count() < 1)
+                   ? NAN
+                   : sqrt(_mean * _mean + _m2 / _minmax.count());
+    }
+
     std::string toString(int precision = -1) const noexcept {
         std::ostringstream os;
         if (precision > -1) {
@@ -191,6 +198,12 @@ class Kurtosis : public IMetric {
     T skew() const noexcept {
         lock_guard lock(_mutex);
         return _state.skew();
+    }
+
+    /** RMS value of the samples */
+    T rms() const noexcept {
+        lock_guard lock(_mutex);
+        return _state.rms();
     }
 
     std::string toString(int precision = -1) const noexcept override {

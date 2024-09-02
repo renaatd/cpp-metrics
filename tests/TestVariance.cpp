@@ -161,6 +161,30 @@ TEST(TestVariance, reset) {
     EXPECT_EQ(1, dut.count());
 }
 
+TEST(TestVariance, rms_first_sample) {
+    Metrics::Variance<> dut;
+
+    // RMS of 0 samples is NAN
+    EXPECT_TRUE(std::isnan(dut.rms()));
+
+    // RMS of 1 sample is the absolute value of the sample
+    dut.update(-5.0);
+    EXPECT_DOUBLE_EQ(5.0, dut.rms());
+}
+
+TEST(TestVariance, rms) {
+    constexpr int LOOPS = 10;
+    Metrics::Variance<> dut;
+
+    // signal with DC value 3 + square wave amplitude 4 has RMS value 5
+    for (int i = 0; i < LOOPS; i++) {
+        dut.update(3 + 4);
+        dut.update(3 - 4);
+    }
+
+    EXPECT_DOUBLE_EQ(5.0, dut.rms());
+}
+
 TEST(TestVariance, toString) {
     Metrics::Variance<> dut;
 
