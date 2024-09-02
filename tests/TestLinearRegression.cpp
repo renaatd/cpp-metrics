@@ -88,6 +88,15 @@ TEST(TestLinearRegression, addToSelf) {
     EXPECT_EQ(2, dut.count());
 }
 
+TEST(TestLinearRegression, add) {
+    Metrics::LinearRegression<> dut1;
+    dut1.update(2.0, 5.0);
+
+    auto dut = dut1 + dut1;
+
+    EXPECT_EQ(2, dut.count());
+}
+
 TEST(TestLinearRegression, slopeHighOffset) {
     constexpr double offset = 1e9;
     Metrics::LinearRegression<> dut;

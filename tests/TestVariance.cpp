@@ -79,6 +79,22 @@ TEST(TestVariance, threeValuesCompoundPlus) {
     EXPECT_EQ(6, dut1.count());
 }
 
+TEST(TestVariance, threeValuesPlus) {
+    Metrics::Variance<> dut1;
+    Metrics::Variance<> dut2;
+
+    dut1.update(1);
+    dut1.update(2);
+    dut2.update(3);
+
+    auto dut = dut1 + dut2;
+    EXPECT_EQ(1, dut.min());
+    EXPECT_EQ(2, dut.mean());
+    EXPECT_EQ(3, dut.max());
+    EXPECT_EQ(3, dut.count());
+    EXPECT_EQ(2, dut.m2());
+}
+
 TEST(TestVariance, variance) {
     Metrics::Variance<> dut;
 
@@ -161,7 +177,7 @@ TEST(TestVariance, reset) {
     EXPECT_EQ(1, dut.count());
 }
 
-TEST(TestVariance, rms_first_sample) {
+TEST(TestVariance, rmsFirstSample) {
     Metrics::Variance<> dut;
 
     // RMS of 0 samples is NAN

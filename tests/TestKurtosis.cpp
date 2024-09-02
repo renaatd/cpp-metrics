@@ -28,9 +28,26 @@ TEST(TestKurtosis, varianceHighOffset) {
     dut.update(offset + 16);
     EXPECT_EQ(4, dut.count());
     EXPECT_DOUBLE_EQ(30.0, dut.sample_variance());
+    EXPECT_DOUBLE_EQ(sqrt(30.0), dut.sample_stddev());
 }
 
-TEST(TestKurtosis, rms_first_sample) {
+TEST(TestKurtosis, reset) {
+    Metrics::Kurtosis<> dut;
+
+    dut.update(-1);
+    dut.reset();
+    EXPECT_TRUE(std::isnan(dut.min()));
+    EXPECT_TRUE(std::isnan(dut.mean()));
+    EXPECT_TRUE(std::isnan(dut.max()));
+    EXPECT_EQ(0, dut.count());
+    dut.update(2);
+    EXPECT_EQ(2, dut.min());
+    EXPECT_EQ(2, dut.mean());
+    EXPECT_EQ(2, dut.max());
+    EXPECT_EQ(1, dut.count());
+}
+
+TEST(TestKurtosis, rmsFirstSample) {
     Metrics::Kurtosis<> dut;
 
     // RMS of 0 samples is NAN
