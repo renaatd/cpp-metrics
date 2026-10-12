@@ -92,7 +92,7 @@ template <typename T = double> class LinearRegressionNoLock {
         T s_xx = _stats_x.m2();
         T x_shift = _stats_x.mean() - x;
         T y_shift = _stats_y.mean() - y;
-        return (_s_xy + x_shift * y_shift) / (s_xx + x_shift * x_shift);
+        return (_s_xy + _stats_x.count() * x_shift * y_shift) / (s_xx + _stats_x.count() * x_shift * x_shift);
     }
 
     /** slope of least squares best fit trough origin, or NAN when less than 2

@@ -36,6 +36,16 @@ TEST(TestLinearRegression, twoValues) {
     EXPECT_DOUBLE_EQ(-1.0, dut.correlation());
 }
 
+TEST(TestLinearRegression, slopeThroughOrigin) {
+    Metrics::LinearRegression<> dut;
+
+    dut.update(1.0, 10.0);
+    dut.update(3.0, 20.0);
+
+    EXPECT_EQ(2, dut.count());
+    EXPECT_DOUBLE_EQ(7.0, dut.slope_through_origin());
+}
+
 TEST(TestLinearRegression, accessStats) {
     Metrics::LinearRegression<> dut;
 
