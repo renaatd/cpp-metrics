@@ -3,6 +3,10 @@
 
 namespace {
 
+TEST(TestSamplingReservoir, invalidSize) {
+    EXPECT_THROW(Metrics::SamplingReservoir<> dut{0}, std::invalid_argument);
+}
+
 TEST(TestSamplingReservoir, firstAllStored) {
     Metrics::SamplingReservoir<> dut{3};
 

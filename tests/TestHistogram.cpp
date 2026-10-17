@@ -5,6 +5,11 @@
 
 namespace {
 
+TEST(TestHistogram, invalidSize) {
+    EXPECT_THROW(Metrics::Histogram<Metrics::SlidingWindowReservoir<>> dut(0),
+                 std::invalid_argument);
+}
+
 TEST(TestHistogram, noDataNoError) {
     Metrics::Histogram<Metrics::SlidingWindowReservoir<>> dut(1, true, 2);
 

@@ -17,6 +17,10 @@ class SamplingReservoir : public IReservoir<T> {
   public:
     explicit SamplingReservoir(unsigned n)
         : _distribution_index(0, n - 1), _reservoir(n) {
+        if (n == 0) {
+            throw std::invalid_argument(
+                "Reservoir size must be greater than 0");
+        }
         reinitialize();
     }
 
@@ -68,7 +72,7 @@ class SamplingReservoir : public IReservoir<T> {
         _w *= std::exp(std::log(getRandom()) / _reservoir.size());
     }
 
-    /** non-virtual function to initialize, can be caled from constructor */
+    /** non-virtual function to initialize, can be called from constructor */
     void reinitialize() noexcept {
         _count = 0;
 

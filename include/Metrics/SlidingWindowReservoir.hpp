@@ -10,7 +10,12 @@ namespace Metrics {
 template <typename T = double, typename M = std::mutex>
 class SlidingWindowReservoir : public IReservoir<T> {
   public:
-    explicit SlidingWindowReservoir(unsigned n) : _reservoir(n) {}
+    explicit SlidingWindowReservoir(unsigned n) : _reservoir(n) {
+        if (n == 0) {
+            throw std::invalid_argument(
+                "Reservoir size must be greater than 0");
+        }
+    }
 
     void reset() noexcept override {
         const std::lock_guard<M> lock(_mutex);

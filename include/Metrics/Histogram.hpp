@@ -17,8 +17,13 @@ template <typename T, typename U = double> class Histogram : public IMetric {
      * n = reservoir size
      * withStats = true if the output must contain stats (stdev, ...)
      * noBins > 1 if the output must contains bins */
-    explicit Histogram(int n, bool withStats = false, int noBins = -1)
-        : _reservoir(n), _withStats(withStats), _noBins(noBins) {}
+    explicit Histogram(unsigned n, bool withStats = false, int noBins = -1)
+        : _reservoir(n), _withStats(withStats), _noBins(noBins) {
+        if (n == 0) {
+            throw std::invalid_argument(
+                "Reservoir size must be greater than 0");
+        }
+    }
 
     void reset() noexcept override { _reservoir.reset(); }
     void update(U value) noexcept { _reservoir.update(value); }

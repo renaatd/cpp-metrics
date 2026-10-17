@@ -3,6 +3,11 @@
 
 namespace {
 
+TEST(TestSlidingWindowReservoir, invalidSize) {
+    EXPECT_THROW(Metrics::SlidingWindowReservoir<> dut{0},
+                 std::invalid_argument);
+}
+
 TEST(TestSlidingWindowReservoir, firstAllStored) {
     Metrics::SlidingWindowReservoir<> dut{3};
 

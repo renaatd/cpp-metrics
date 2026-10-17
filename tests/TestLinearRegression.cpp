@@ -71,13 +71,14 @@ TEST(TestLinearRegression, addVaryingLength) {
 
     Metrics::LinearRegression<> dut1;
     Metrics::LinearRegression<> dut2;
-    for (int lenDut1 = 0; lenDut1 <= height.size(); lenDut1++) {
+    auto noHeights = static_cast<int>(height.size());
+    for (int lenDut1 = 0; lenDut1 <= noHeights; lenDut1++) {
         dut1.reset();
         for (int i = 0; i < lenDut1; i++) {
             dut1.update(height[i], mass[i]);
         }
         dut2.reset();
-        for (int i = lenDut1; i < height.size(); i++) {
+        for (int i = lenDut1; i < noHeights; i++) {
             dut2.update(height[i], mass[i]);
         }
         dut1 += dut2;
