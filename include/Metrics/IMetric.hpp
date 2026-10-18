@@ -8,7 +8,7 @@ namespace Metrics {
 class IMetric {
   public:
     virtual void reset() noexcept = 0;
-    virtual std::string toString(int precision = -1) const noexcept = 0;
+    virtual std::string toString(int precision = -1) const = 0;
     virtual ~IMetric() = default;
 };
 

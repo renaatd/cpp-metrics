@@ -2,28 +2,34 @@
 #define METRICS_GAUGE_HPP
 
 #include "IMetric.hpp"
-#include <atomic>
 #include <iomanip>
+#include <mutex>
 #include <sstream>
 #include <string>
 
 namespace Metrics {
 /** Store a single value (gauge) */
-template <typename T = double> class Gauge : public IMetric {
+template <typename T = double, typename M = std::mutex>
+class Gauge : public IMetric {
+    using lock_guard = const std::lock_guard<M>;
+
   public:
-    void reset() noexcept override { _value = {}; }
+    void reset() noexcept override {
+        lock_guard lock(_mutex);
+        _value = {};
+    }
 
     void update(T value) noexcept {
-        // _value.store(value);
+        lock_guard lock(_mutex);
         _value = value;
     }
 
     T value() const noexcept {
-        // return _value.load();
+        lock_guard lock(_mutex);
         return _value;
     }
 
-    std::string toString(int precision = -1) const noexcept override {
+    std::string toString(int precision = -1) const override {
         std::ostringstream os;
         if (precision > -1) {
             os << std::fixed << std::setprecision(precision);
@@ -33,8 +39,8 @@ template <typename T = double> class Gauge : public IMetric {
     }
 
   private:
-    // std::atomic<T> _value {};
     T _value{};
+    mutable M _mutex{};
 };
 
 } // namespace Metrics

@@ -19,7 +19,7 @@ template <typename T = double> class Snapshot {
         std::sort(_snapshot.begin(), _snapshot.end());
     }
 
-    int size() const { return _snapshot.size(); }
+    unsigned size() const { return _snapshot.size(); }
     const std::vector<T> &values() const { return _snapshot; }
 
     T getValue(double quantile) const {
@@ -50,6 +50,15 @@ template <typename T = double> class Snapshot {
 
     /** get vector with no of elements per bin */
     Bins getBins(int noBins, T min, T width) const {
+        if (noBins <= 0) {
+            throw std::invalid_argument("noBins must be greater than 0");
+        }
+        if (width < 0) {
+            throw std::invalid_argument("width must be greater than 0");
+        }
+        if (width == 0) {
+            return Bins(1, _snapshot.size());
+        }
         Bins bins(noBins);
         for (auto x : _snapshot) {
             int binIndex = std::floor(noBins * (x - min) / width);

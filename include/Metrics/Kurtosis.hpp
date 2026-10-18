@@ -81,7 +81,7 @@ template <typename T = double> class KurtosisNoLock {
                    : sqrt(_mean * _mean + _m2 / _minmax.count());
     }
 
-    std::string toString(int precision = -1) const noexcept {
+    std::string toString(int precision = -1) const {
         std::ostringstream os;
         if (precision > -1) {
             os << std::fixed << std::setprecision(precision);
@@ -206,7 +206,7 @@ class Kurtosis : public IMetric {
         return _state.rms();
     }
 
-    std::string toString(int precision = -1) const noexcept override {
+    std::string toString(int precision = -1) const override {
         lock_guard lock(_mutex);
         return _state.toString(precision);
     }

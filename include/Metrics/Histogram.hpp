@@ -18,18 +18,13 @@ template <typename T, typename U = double> class Histogram : public IMetric {
      * withStats = true if the output must contain stats (stdev, ...)
      * noBins > 1 if the output must contains bins */
     explicit Histogram(unsigned n, bool withStats = false, int noBins = -1)
-        : _reservoir(n), _withStats(withStats), _noBins(noBins) {
-        if (n == 0) {
-            throw std::invalid_argument(
-                "Reservoir size must be greater than 0");
-        }
-    }
+        : _reservoir(n), _withStats(withStats), _noBins(noBins) {}
 
     void reset() noexcept override { _reservoir.reset(); }
     void update(U value) noexcept { _reservoir.update(value); }
     Snapshot<U> getSnapshot() noexcept { return _reservoir.getSnapshot(); }
 
-    std::string toString(int precision = -1) const noexcept override {
+    std::string toString(int precision = -1) const override {
         auto snapshot = _reservoir.getSnapshot();
 
         std::ostringstream os;
@@ -49,8 +44,8 @@ template <typename T, typename U = double> class Histogram : public IMetric {
             }
             os << ", stats: (" << stats.toString(precision) << ")";
         }
-        if (_noBins > 1) {
-            os << std::endl << "buckets:" << std::endl;
+        if (_noBins > 1 && snapshot.size() > 0) {
+            os << "\nbins:";
             dumpBinsToStream(snapshot, os);
         }
         return os.str();
@@ -62,25 +57,22 @@ template <typename T, typename U = double> class Histogram : public IMetric {
         auto min = snapshot.getValue(0.0);
         auto max = snapshot.getValue(1.0);
         auto width = max - min;
-        if (width <= 0.0) {
-            return;
-        }
 
         auto bins = snapshot.getBins(_noBins, min, width);
         int maxCount = *std::max_element(bins.cbegin(), bins.cend());
 
         // create output
-        for (int i = 0; i < _noBins; i++) {
+        for (int i = 0; i < bins.size(); i++) {
             auto count = bins[i];
             double percent = 100.0 * count / snapshot.size();
             if (precision > -1) {
                 os << std::fixed << std::setprecision(precision);
             }
-            os << std::setw(6) << min + i * width / _noBins
+            os << '\n'
+               << std::setw(6) << min + i * width / _noBins
                << " <= x: " << std::setw(4) << count << " (" << std::setw(5)
                << std::setprecision(1) << std::fixed << percent << " %) - "
-               << std::string(MAX_BIN_WIDTH * count / maxCount, '*')
-               << std::endl;
+               << std::string(MAX_BIN_WIDTH * count / maxCount, '*');
         }
     }
 

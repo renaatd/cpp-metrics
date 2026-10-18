@@ -60,7 +60,7 @@ template <typename T = double> class MinMaxNoLock {
     /** return highest measured value or NAN when there are no measurements */
     T max() const noexcept { return (_count == 0) ? NAN : _max; }
 
-    std::string toString(int precision = -1) const noexcept {
+    std::string toString(int precision = -1) const {
         std::ostringstream os;
         if (precision > -1) {
             os << std::fixed << std::setprecision(precision);
@@ -139,7 +139,7 @@ class MinMax : public IMetric {
     }
 
     /** return no of measurements */
-    int count() const noexcept {
+    int64_t count() const noexcept {
         lock_guard lock(_mutex);
         return _state.count();
     }
@@ -156,7 +156,7 @@ class MinMax : public IMetric {
         return _state.max();
     }
 
-    std::string toString(int precision = -1) const noexcept override {
+    std::string toString(int precision = -1) const override {
         lock_guard lock(_mutex);
         return _state.toString(precision);
     }

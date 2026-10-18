@@ -23,7 +23,7 @@ C++ Metrics is a header-only library to measure parameter distributions in an em
 ## Features
 - low overhead: typically < 10 ns / measurement
 - updating is made thread-safe by using mutexes, mutexes can be disabled at compile time
-- optional registry for reporting all metrics at once
+- optional registry for reporting all metrics at once (not thread-safe)
 - no build system needed, just copy the header files in a project
 - no background threads
 - no external dependencies

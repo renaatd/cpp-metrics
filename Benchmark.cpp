@@ -250,7 +250,7 @@ int main() {
             histogram.update(values[i]);
             stats.update(values[i]);
         }
-        std::cout << "After 100 adds:" << std::endl << histogram.toString(1);
+        std::cout << "After 100 adds:" << std::endl << histogram.toString(1) << '\n';
         std::cout << "Stats: " << stats.toString(1) << std::endl << std::endl;
 
         for (unsigned i = 100; i < values.size(); i++) {
@@ -258,7 +258,7 @@ int main() {
             stats.update(values[i]);
         }
         std::cout << "After " << values.size() << " adds:" << std::endl
-                  << histogram.toString(1);
+                  << histogram.toString(1) << '\n';
         std::cout << "Stats: " << stats.toString(1) << std::endl << std::endl;
     }
 

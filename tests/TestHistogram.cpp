@@ -11,10 +11,21 @@ TEST(TestHistogram, invalidSize) {
 }
 
 TEST(TestHistogram, noDataNoError) {
-    Metrics::Histogram<Metrics::SlidingWindowReservoir<>> dut(1, true, 2);
+    Metrics::Histogram<Metrics::SlidingWindowReservoir<>> dut(10, true, 2);
 
     EXPECT_EQ(0, dut.toString().find(
                      "count(0), min(0), Q25(0), Q50(0), Q75(0), max(0)"));
+}
+
+TEST(TestHistogram, constantDataNoError) {
+    Metrics::Histogram<Metrics::SlidingWindowReservoir<>> dut(10, true, 2);
+
+    dut.update(5);
+    EXPECT_EQ(0, dut.toString().find(
+                     "count(1), min(5), Q25(5), Q50(5), Q75(5), max(5)"));
+    dut.update(5);
+    EXPECT_EQ(0, dut.toString().find(
+                     "count(2), min(5), Q25(5), Q50(5), Q75(5), max(5)"));
 }
 
 TEST(TestHistogram, snapshotCorrect) {

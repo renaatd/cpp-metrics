@@ -82,7 +82,7 @@ template <typename T = double> class LinearRegressionNoLock {
                               _stats_y.stddev());
     }
 
-    /** slope of least squares best fit trough (x,y), or NAN when less than 2
+    /** slope of least squares best fit trough (x,y), or NAN when no
      * measurements */
     T slope_through(T x, T y) const noexcept {
         if (_stats_x.count() < 1) {
@@ -96,11 +96,11 @@ template <typename T = double> class LinearRegressionNoLock {
                (s_xx + _stats_x.count() * x_shift * x_shift);
     }
 
-    /** slope of least squares best fit trough origin, or NAN when less than 2
+    /** slope of least squares best fit trough origin, or NAN when no
      * measurements */
     T slope_through_origin() const noexcept { return slope_through(0.0, 0.0); }
 
-    std::string toString(int precision = -1) const noexcept {
+    std::string toString(int precision = -1) const {
         std::ostringstream os;
         if (precision > -1) {
             os << std::fixed << std::setprecision(precision);
@@ -188,12 +188,12 @@ class LinearRegression : public IMetric {
         return _state.count();
     }
 
-    const Internals::VarianceNoLock<T> &stats_x() const noexcept {
+    const Internals::VarianceNoLock<T> stats_x() const noexcept {
         lock_guard lock(_mutex);
         return _state.stats_x();
     }
 
-    const Internals::VarianceNoLock<T> &stats_y() const noexcept {
+    const Internals::VarianceNoLock<T> stats_y() const noexcept {
         lock_guard lock(_mutex);
         return _state.stats_y();
     }
@@ -231,7 +231,7 @@ class LinearRegression : public IMetric {
         return _state.slope_through_origin();
     }
 
-    std::string toString(int precision = -1) const noexcept override {
+    std::string toString(int precision = -1) const override {
         lock_guard lock(_mutex);
         return _state.toString(precision);
     }

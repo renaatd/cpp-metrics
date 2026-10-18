@@ -1,6 +1,7 @@
 // Tests trying to cause a deadlock (e.g. bad locking order)
 
 #include "Metrics/Kurtosis.hpp"
+#include "Metrics/LinearRegression.hpp"
 #include "Metrics/MinMeanMax.hpp"
 #include "Metrics/Variance.hpp"
 #include "gtest/gtest.h"
@@ -69,6 +70,19 @@ TEST(TestDeadlock, kurtosisAssign) {
     t2.join();
 }
 
+TEST(TestDeadlock, linearRegressionAssign) {
+    Metrics::LinearRegression<> dut1, dut2;
+    std::cout << "Starting thread" << std::endl;
+    std::thread t1(assign<Metrics::LinearRegression<>>, std::ref(dut1),
+                   std::ref(dut2));
+    std::thread t2(assign<Metrics::LinearRegression<>>, std::ref(dut2),
+                   std::ref(dut1));
+
+    std::cout << "Joining threads" << std::endl;
+    t1.join();
+    t2.join();
+}
+
 TEST(TestDeadlock, minMaxAdd) {
     Metrics::MinMax<> dut1, dut2;
     std::cout << "Starting thread" << std::endl;
@@ -96,6 +110,19 @@ TEST(TestDeadlock, varianceAdd) {
     std::cout << "Starting thread" << std::endl;
     std::thread t1(add<Metrics::Variance<>>, std::ref(dut1), std::ref(dut2));
     std::thread t2(add<Metrics::Variance<>>, std::ref(dut2), std::ref(dut1));
+
+    std::cout << "Joining threads" << std::endl;
+    t1.join();
+    t2.join();
+}
+
+TEST(TestDeadlock, linearRegressionAdd) {
+    Metrics::LinearRegression<> dut1, dut2;
+    std::cout << "Starting thread" << std::endl;
+    std::thread t1(add<Metrics::LinearRegression<>>, std::ref(dut1),
+                   std::ref(dut2));
+    std::thread t2(add<Metrics::LinearRegression<>>, std::ref(dut2),
+                   std::ref(dut1));
 
     std::cout << "Joining threads" << std::endl;
     t1.join();

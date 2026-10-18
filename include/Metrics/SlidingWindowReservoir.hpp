@@ -41,7 +41,6 @@ class SlidingWindowReservoir : public IReservoir<T> {
         const std::lock_guard<M> lock(_mutex);
         return samples_nolock();
     }
-    const T *data() const noexcept override { return _reservoir.data(); }
 
     Snapshot<T> getSnapshot() const noexcept override {
         const std::lock_guard<M> lock(_mutex);
