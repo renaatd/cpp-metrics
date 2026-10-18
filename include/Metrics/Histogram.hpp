@@ -62,7 +62,7 @@ template <typename T, typename U = double> class Histogram : public IMetric {
         int maxCount = *std::max_element(bins.cbegin(), bins.cend());
 
         // create output
-        for (int i = 0; i < bins.size(); i++) {
+        for (int i = 0; i < static_cast<int>(bins.size()); i++) {
             auto count = bins[i];
             double percent = 100.0 * count / snapshot.size();
             if (precision > -1) {
